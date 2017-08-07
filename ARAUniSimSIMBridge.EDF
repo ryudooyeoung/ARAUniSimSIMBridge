@@ -1,0 +1,405 @@
+~~_ARAUniSimSIMBridge.ARASIMBridge_Variables
+
+VarEnumInfo enumPagePly_Enum
+   Entry 0 "Server"
+   Entry 1 "Mapping"
+end
+
+ExtensionVariables EV
+   EnumVar "enumPagePly" "enumPagePly" 0 Persistent NoTriggerSolve enumPagePly_Enum
+   Message "msgConnectOPC" "msgConnectOPC" NoTriggerSolve
+   Message "msgDisconnectOPC" "msgDisconnectOPC" NoTriggerSolve
+   Message "msgLoadOLGAEXE" "msgLoadOLGAEXE" NoTriggerSolve
+   Message "msgLoadOLGAModel" "msgLoadOLGAModel" NoTriggerSolve
+   Message "msgLoadOLGASnapshot" "msgLoadOLGASnapshot" NoTriggerSolve
+   Message "msgLoadMapping" "msgLoadMapping" NoTriggerSolve
+   Message "msgSaveMapping" "msgSaveMapping" NoTriggerSolve
+   Message "msgAddMapping" "msgAddMapping" NoTriggerSolve
+   Message "msgSnapshot" "msgSnapshot" NoTriggerSolve
+   Message "msgLocalServers" "msgLocalServers" NoTriggerSolve
+   Message "msgNetworkServers" "msgNetworkServers" NoTriggerSolve
+   Message "msgMonitor" "msgMonitor" NoTriggerSolve
+   RealVar "dblOPCServerSelected" "dblOPCServerSelected" "Index" 0 Volatile NoTriggerSolve
+   RealVar "dblConnectedOPC" "dblConnectedOPC" "Index" 0 Volatile NoTriggerSolve
+   RealVar "dblRunningSim" "dblRunningSim" "Index" 0 Volatile NoTriggerSolve
+   RealVar "dblSimStatus" "dblSimStatus" "Index" 0 Volatile NoTriggerSolve
+   RealVar "dblOLGARunInterval" "dblOLGARunInterval" "Index" 0 Volatile NoTriggerSolve
+   RealVar "dblRealTimeFactor" "dblRealTimeFactor" "Index" 0 Volatile NoTriggerSolve
+   TextVar "txtFromTypes" "txtFromTypes" 1 Volatile NoTriggerSolve
+   TextVar "txtFromNames" "txtFromNames" 1 Volatile NoTriggerSolve
+   TextVar "txtToTypes" "txtToTypes" 1 Volatile NoTriggerSolve
+   TextVar "txtToNames" "txtToNames" 1 Volatile NoTriggerSolve
+   TextVar "txtUniSimTimes" "txtUniSimTimes" 1 Volatile NoTriggerSolve
+   TextVar "txtOLGATimes" "txtOLGATimes" 1 Volatile NoTriggerSolve
+   TextVar "txtCPUClockTimes" "txtCPUClockTimes" 1 Volatile NoTriggerSolve
+   TextVar "txtSimStatus" "txtSimStatus" 0 Volatile NoTriggerSolve
+   TextVar "txtOLGAExecutable" "txtOLGAExecutable" 0 Volatile NoTriggerSolve
+   TextVar "txtOLGAModel" "txtOLGAModel" 0 Volatile NoTriggerSolve
+   TextVar "txtOLGASnapshot" "txtOLGASnapshot" 0 Volatile NoTriggerSolve
+   TextVar "txtOLGAMessage" "txtOLGAMessage" 0 Volatile NoTriggerSolve
+   TextVar "txtLocalServers" "txtLocalServers" 1 Volatile NoTriggerSolve
+   TextVar "txtNetworkServers" "txtNetworkServers" 1 Volatile NoTriggerSolve
+   TextVar "txtLocalServerSelected" "txtLocalServerSelected" 0 Volatile NoTriggerSolve
+   TextVar "txtNetworkServerSelected" "txtNetworkServerSelected" 0 Volatile NoTriggerSolve
+   TextVariable "txtUniqueID" "txtUniqueID" 0 Persistent NoTriggerSolve HideInNavigators
+   Message "msgResetMapping" "msgResetMapping" NoTriggerSolve
+   ExtensionType "UnitOperation"
+   ObjectDescription "ARASIMBridge 20170728"
+   BaseVariables "flowobj"
+end
+
+~~_ARAUniSimSIMBridge.ARASIMBridge_DefaultView
+
+StaticText StaticTextStatus
+   Area 0 200 376 8
+   TargetMoniker ":ExtraData.0.0(txtSimStatus)"
+   StretchWidth
+   FixToBottom
+   BGColourMoniker ":ExtraData.0.0(dblSimStatus)"
+   Align Centre
+end
+
+Form Main
+   Title "%s"
+   Widget VisServers
+   Widget VisPage
+   Widget btnMappingLoad
+   Widget btnMappingEdit
+   Widget btnOLGAEXE
+   Widget btnOLGAModel
+   Widget btnConnectOPC
+   Widget btnDisconnectOPC
+   Widget btnMonitor
+   Widget btnMappingSave
+   Widget btnOLGASnapshot
+   Widget btnSnapshot
+   Widget MatrixWidgetMapping
+   Widget MatrixWidgetOLGAConfig
+   Widget MatrixWidgetTimes
+   Widget MatrixWidgetFators
+   Widget StaticTextStatus
+   Widget StaticTextStartTime
+   Widget StaticTextEndTime
+   Widget StaticTextElapsedTime
+   Widget TextListLocalServers
+   Widget GroupBoxLocalServers
+   Widget btnMappingClear
+   Widget MatrixWidgetOtherOPC
+   Widget StaticText1
+   Widget PageTabs
+   Version 1
+   PageBottom PageTabs
+end
+
+SubViewMgr VisPage
+   TargetMoniker ":ExtraData.0.0(enumPagePly)"
+   State "Servers" 0.000000 0.000000 ":"
+   State "Mapping" 1.000000 1.000000 ":"
+end
+
+Button btnMappingLoad
+   Area 0 0 50 14
+   Label "Load"
+   SourceViewMgr VisPage 2
+   EnableMoniker ":ExtraData.0.0(dblRunningSim)"
+   EnableOnFalse
+   Message ":ExtraData.0.0(msgLoadMapping)"
+end
+
+Button btnMappingEdit
+   Area 104 0 50 14
+   Label "Edit"
+   SourceViewMgr VisPage 2
+   EnableMoniker ":ExtraData.0.0(dblRunningSim)"
+   EnableOnFalse
+   Message ":ExtraData.0.0(msgAddMapping)"
+end
+
+MatrixWidget MatrixWidgetMapping
+   Area 0 16 373 162
+   StretchWidth
+   StretchHeight
+   SourceViewMgr VisPage 2
+   CellSize 30 9
+   ShowLabels Top
+   Info MatrixDataSetFromType
+   Info MatrixDataSetFromName
+   Info MatrixDataSetToType
+   Info MatrixDataSetToName
+end
+
+Button btnOLGAEXE
+   Area 366 16 12 8
+   Label "..."
+   FixToRight
+   SourceViewMgr VisServers 1
+   SourceViewMgr VisPage 1
+   EnableMoniker ":ExtraData.0.0(dblConnectedOPC)"
+   EnableOnFalse
+   Message ":ExtraData.0.0(msgLoadOLGAExe)"
+end
+
+Button btnOLGAModel
+   Area 366 26 12 8
+   Label "..."
+   FixToRight
+   SourceViewMgr VisServers 1
+   SourceViewMgr VisPage 1
+   EnableMoniker ":ExtraData.0.0(dblConnectedOPC)"
+   EnableOnFalse
+   Message ":ExtraData.0.0(msgLoadOLGAModel)"
+end
+
+Button btnConnectOPC
+   Area 96 0 51 14
+   Label "Connect"
+   SourceViewMgr VisPage 1
+   EnableMoniker ":ExtraData.0.0(dblConnectedOPC)"
+   EnableOnFalse
+   Message ":ExtraData.0.0(msgConnectOPC)"
+end
+
+Button btnDisconnectOPC
+   Area 148 0 51 14
+   Label "Disconnect"
+   SourceViewMgr VisPage 1
+   EnableMoniker ":ExtraData.0.0(dblConnectedOPC)"
+   Message ":ExtraData.0.0(msgDisconnectOPC)"
+end
+
+Button btnMonitor
+   Area 312 0 51 14
+   Label "Monitor"
+   SourceViewMgr VisPage 1
+   Message ":ExtraData.0.0(msgMonitor)"
+end
+
+Button btnMappingSave
+   Area 52 0 50 14
+   Label "Save"
+   SourceViewMgr VisPage 2
+   EnableMoniker ":ExtraData.0.0(dblRunningSim)"
+   EnableOnFalse
+   Message ":ExtraData.0.0(msgSaveMapping)"
+end
+
+MatrixWidget MatrixWidgetOLGAConfig
+   Area 96 16 268 29
+   StretchWidth
+   SourceViewMgr VisServers 1
+   SourceViewMgr VisPage 1
+   EnableMoniker ":ExtraData.0.0(isExecuteOLGA)"
+   EnableOnFalse
+   CellSize 205 9
+   LeftLabelWidth 60
+   ShowLabels Left
+   Direction Horizontal
+   Info colOLGAExecutable
+   Info colOLGAModel
+   Info colOLGASnapshot
+end
+
+MatrixWidget MatrixWidgetTimes
+   Area 96 90 268 29
+   StretchWidth
+   SourceViewMgr VisPage 1
+   SourceViewMgr VisServers 1
+   CellSize 68 9
+   LeftLabelWidth 60
+   ShowLabels Left
+   Direction Horizontal
+   Info colCPUClockTimes
+   Info colUniSimTimes
+   Info colOLGATimes
+end
+
+MatrixWidget MatrixWidgetFators
+   Area 96 50 268 18
+   SourceViewMgr VisPage 1
+   EnableMoniker ":ExtraData.0.0(dblRunningSim)"
+   EnableOnFalse
+   CellSize 205 9
+   LeftLabelWidth 60
+   ShowLabels Left
+   Direction Horizontal
+   Info colRealTimeFactor
+   Info colOLGARunInterval
+end
+
+StaticText StaticTextStartTime
+   Area 178 78 31 8
+   Label "Start Time"
+   SourceViewMgr VisPage 1
+end
+
+StaticText StaticTextEndTime
+   Area 246 78 28 8
+   Label "End Time"
+   SourceViewMgr VisPage 1
+end
+
+StaticText StaticTextElapsedTime
+   Area 310 78 40 8
+   Label "Elapsed Time"
+   SourceViewMgr VisPage 1
+end
+
+Button btnOLGASnapshot
+   Area 366 36 12 8
+   Label ".."
+   FixToRight
+   SourceViewMgr VisServers 1
+   SourceViewMgr VisPage 1
+   EnableMoniker ":ExtraData.0.0(dblConnectedOPC)"
+   EnableOnFalse
+   Message ":ExtraData.0.0(msgLoadOLGASnapshot)"
+end
+
+Button btnSnapshot
+   Area 260 0 51 14
+   Label "Snapshot"
+   SourceViewMgr VisPage 1
+   EnableMoniker ":ExtraData.0.0(dblConnectedOPC)"
+   Message ":ExtraData.0.0(msgSnapshot)"
+end
+
+TextList TextListLocalServers
+   Area 2 10 85 166
+   TargetMoniker ":ExtraData.0.0.[](txtLocalServers)"
+   StretchHeight
+   SourceViewMgr VisPage 1
+   Message ":ExtraData.0.0(msgLocalServers)"
+   TrackSpecMoniker ":ExtraData.0.0(txtLocalServerSelected)"
+end
+
+PageTabs PageTabs
+   Area 0 182 378 16
+   TargetMoniker ":ExtraData.0.0(enumPagePly)"
+   StretchWidth
+   FixToBottom
+   Tab 0.000000 "Servers"
+   Tab 1.000000 "Mapping"
+end
+
+GroupBox GroupBoxLocalServers
+   Area 0 0 90 180
+   Label "Local OPC Servers"
+   StretchHeight
+   SourceViewMgr VisPage 1
+end
+
+SubViewMgr VisServers
+   TargetMoniker ":ExtraData.0.0(dblOPCServerSelected)"
+   State "OLGA" 20.000000 20.000000 ":"
+   State "Synergy" 21.000000 21.000000 ":"
+   State "etc" 22.000000 22.000000 ":"
+end
+
+TextMatrixInfo MatrixDataSetFromType
+   Moniker ":ExtraData.0.0.[](txtFromTypes)"
+   Label "From Type"
+   Width 80
+end
+
+TextMatrixInfo MatrixDataSetFromName
+   Moniker ":ExtraData.0.0.[](txtFromNames)"
+   Label "From Name"
+   Width 100
+end
+
+TextMatrixInfo MatrixDataSetToType
+   Moniker ":ExtraData.0.0.[](txtToTypes)"
+   Label "To Type"
+   Width 80
+end
+
+TextMatrixInfo MatrixDataSetToName
+   Moniker ":ExtraData.0.0.[](txtToNames)"
+   Label "To Name"
+   Width 100
+end
+
+TextMatrixInfo colOLGAExecutable
+   Moniker ":ExtraData.0.0(txtOLGAExecutable)"
+   Label "OLGA Executable"
+end
+
+TextMatrixInfo colOLGAModel
+   Moniker ":ExtraData.0.0(txtOLGAModel)"
+   Label "OLGA Model"
+end
+
+TextMatrixInfo colOLGASnapshot
+   Moniker ":ExtraData.0.0(txtOLGASnapshot)"
+   Label "OLGA Snapshot File"
+end
+
+TextMatrixInfo colCPUClockTimes
+   Moniker ":ExtraData.0.0.[](txtCPUClockTimes)"
+   Label "CPU Clock Time"
+   ViewOnly True
+end
+
+TextMatrixInfo colUniSimTimes
+   Moniker ":ExtraData.0.0.[](txtUniSimTimes)"
+   Label "UniSim Current Time"
+   ViewOnly True
+end
+
+TextMatrixInfo colOLGATimes
+   Moniker ":ExtraData.0.0.[](txtOLGATimes)"
+   Label "OLGA Current Time"
+   ViewOnly True
+end
+
+Button btnMappingClear
+   Area 156 0 50 14
+   Label "Clear"
+   SourceViewMgr VisPage 2
+   EnableMoniker ":ExtraData.0.0(dblRunningSim)"
+   EnableOnFalse
+   Message ":ExtraData.0.0(msgResetMapping)"
+end
+
+MatrixWidget MatrixWidgetOtherOPC
+   Area 96 90 268 21
+   StretchWidth
+   SourceViewMgr VisPage 1
+   SourceViewMgr VisServers 4
+   CellSize 68 9
+   LeftLabelWidth 60
+   ShowLabels Left
+   Direction Horizontal
+   Info colOtherCPUClockTimes
+   Info colOtherUniSimTimes
+end
+
+TextMatrixInfo colOtherUniSimTimes
+   Moniker ":ExtraData.0.0.[](txtUniSimTimes)"
+   Label "UniSim Current Time"
+   ViewOnly True
+end
+
+TextMatrixInfo colOtherCPUClockTimes
+   Moniker ":ExtraData.0.0.[](txtCPUClockTimes)"
+   Label "CPU Clock Time"
+   ViewOnly True
+end
+
+NumericMatrixInfo colRealTimeFactor
+   Moniker ":ExtraData.0.0(dblRealTimeFactor)"
+   Label "Real Time Factor"
+   ViewOnly True
+end
+
+NumericMatrixInfo colOLGARunInterval
+   Moniker ":ExtraData.0.0(dblOLGARunInterval)"
+   Label "Run Interval"
+end
+
+StaticText StaticText1
+   Area 94 168 280 8
+   TargetMoniker ":ExtraData.0.0(txtOLGAMessage)"
+   SourceViewMgr VisPage 1
+end
+

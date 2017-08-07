@@ -95,7 +95,6 @@ namespace ARAUniSimSIMBridge
 
         private void PrintServerList(Graphics g)
         {
-
             try
             {
                 /* string txtttt = string.Format("{0} {1} {2}", this.myOPCServers.Count, this.myReadDTs.Count, this.myWriteDTs.Count);
@@ -202,169 +201,164 @@ namespace ARAUniSimSIMBridge
         Font tooltipFont = new Font("Consolas", 8);
         private void panel1_Paint(object sender, PaintEventArgs e)
         {
-            try
+
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            Rectangle drawarea = new Rectangle(0, 0, this.panelMonitor.Width, this.panelMonitor.Height);
+            float hh = this.panelMonitor.Height * 0.333f;
+            using (SolidBrush bab = new SolidBrush(Color.FromArgb(100, Color.Black)))
             {
-                Graphics g = e.Graphics;
-                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.FillRectangle(bab, drawarea);
+            }
 
-                Rectangle drawarea = new Rectangle(0, 0, this.panelMonitor.Width, this.panelMonitor.Height);
-                float hh = this.panelMonitor.Height * 0.333f;
-                using (SolidBrush bab = new SolidBrush(Color.FromArgb(100, Color.Black)))
+            if (this.toolStripMenuItemElapsedTime.Checked)
+            {
+                this.PrintServerList(g);
+                return;
+            }
+
+            if (this.elapsedTimes.Count <= 2) return;
+
+            List<float> mdata = this.elapsedTimes;
+
+            float mxmax = mdata.Count;
+            float mxmin = 0;
+            float mxdistance = (drawarea.Width - 10) / (mxmax - mxmin);
+
+            float mymax = mdata.Max();
+            float mymin = mdata.Min();
+            //float mymax = 600, mymin = 0;
+            float mydistance = (hh - 10) / (mymax - mymin);
+
+            using (Pen temp = new Pen(Color.WhiteSmoke, 1))
+            {
+                using (GraphicsPath path = new GraphicsPath())
                 {
-                    g.FillRectangle(bab, drawarea);
-                }
-
-                if (this.toolStripMenuItemElapsedTime.Checked)
-                {
-                    this.PrintServerList(g);
-                    return;
-                }
-
-                if (this.elapsedTimes.Count <= 2) return;
-
-                List<float> mdata = this.elapsedTimes;
-
-                float mxmax = mdata.Count;
-                float mxmin = 0;
-                float mxdistance = (drawarea.Width - 10) / (mxmax - mxmin);
-
-                float mymax = mdata.Max();
-                float mymin = mdata.Min();
-                //float mymax = 600, mymin = 0;
-                float mydistance = (hh - 10) / (mymax - mymin);
-
-                using (Pen temp = new Pen(Color.WhiteSmoke, 1))
-                {
-                    using (GraphicsPath path = new GraphicsPath())
+                    PointF[] points = new PointF[mdata.Count];
+                    for (int i = 0; i < mdata.Count; i++)
                     {
-                        PointF[] points = new PointF[mdata.Count];
-                        for (int i = 0; i < mdata.Count; i++)
-                        {
-                            float x = (i * mxdistance) - (mxmin * mxdistance) + 5;
-                            float y = 0 + (hh - (mdata[i] - mymin) * mydistance) - 5;
-                            points[i] = new PointF(x, y);
-                        }
-                        path.AddLines(points);
-                        g.DrawPath(temp, path);
-
-                        using (StringFormat strf = new StringFormat())
-                        {
-                            strf.LineAlignment = StringAlignment.Far;
-                            strf.Alignment = StringAlignment.Far;
-                            g.DrawString(string.Format("execute elapsed {0:0}", mdata[mdata.Count - 1]), tooltipFont, Brushes.Black, this.panelMonitor.Width, hh - 13, strf);
-
-                            strf.LineAlignment = StringAlignment.Near;
-                            strf.Alignment = StringAlignment.Near;
-                            g.DrawString(string.Format("{0}", (long)mymax), tooltipFont, Brushes.White, 0, 5, strf);
-
-                            strf.LineAlignment = StringAlignment.Far;
-                            strf.Alignment = StringAlignment.Near;
-                            g.DrawString(string.Format("{0}", (long)mymin), tooltipFont, Brushes.White, 0, hh - 5, strf);
-                        }
+                        float x = (i * mxdistance) - (mxmin * mxdistance) + 5;
+                        float y = 0 + (hh - (mdata[i] - mymin) * mydistance) - 5;
+                        points[i] = new PointF(x, y);
                     }
-                }
+                    path.AddLines(points);
+                    g.DrawPath(temp, path);
 
-
-                List<int> tdata = this.accessTimes;
-
-                float txmax = tdata.Count;
-                float txmin = 0;
-                float txdistance = (drawarea.Width - 10) / (txmax - txmin);
-
-                float tymax = tdata.Max();
-                float tymin = tdata.Min();
-                //float tymax = 600, tymin = 0;
-                if (tymax == tymin)
-                {
-                    tymax++;
-                    tymin--;
-                }
-                float tydistance = (hh - 10) / (tymax - tymin);
-
-                using (Pen temp = new Pen(Color.Pink, 1))
-                {
-                    using (GraphicsPath path = new GraphicsPath())
+                    using (StringFormat strf = new StringFormat())
                     {
-                        PointF[] points = new PointF[tdata.Count];
-                        for (int i = 0; i < tdata.Count; i++)
-                        {
-                            float x = (i * txdistance) - (txmin * txdistance) + 5;
-                            float y = hh + (hh - (tdata[i] - tymin) * tydistance) - 5;
-                            points[i] = new PointF(x, y);
-                        }
-                        path.AddLines(points);
-                        g.DrawPath(temp, path);
+                        strf.LineAlignment = StringAlignment.Far;
+                        strf.Alignment = StringAlignment.Far;
+                        g.DrawString(string.Format("execute elapsed {0:0}", mdata[mdata.Count - 1]), tooltipFont, Brushes.Black, this.panelMonitor.Width, hh - 13, strf);
 
-                        using (StringFormat strf = new StringFormat())
-                        {
-                            strf.LineAlignment = StringAlignment.Far;
-                            strf.Alignment = StringAlignment.Far;
-                            g.DrawString(string.Format("{0}", tdata[tdata.Count - 1]), tooltipFont, Brushes.Black, this.panelMonitor.Width, hh + hh - 13, strf);
+                        strf.LineAlignment = StringAlignment.Near;
+                        strf.Alignment = StringAlignment.Near;
+                        g.DrawString(string.Format("{0}", (long)mymax), tooltipFont, Brushes.White, 0, 5, strf);
 
-                            strf.LineAlignment = StringAlignment.Near;
-                            strf.Alignment = StringAlignment.Near;
-                            g.DrawString(string.Format("{0}", (long)tymax), tooltipFont, Brushes.Pink, 0, hh + 5, strf);
-
-                            strf.LineAlignment = StringAlignment.Far;
-                            strf.Alignment = StringAlignment.Near;
-                            g.DrawString(string.Format("{0}", (long)tymin), tooltipFont, Brushes.Pink, 0, hh + hh - 5, strf);
-                        }
-                    }
-                }
-
-
-
-                List<float> cdata = this.gapTimes;
-
-                float cxmax = cdata.Count;
-                float cxmin = 0;
-                float cxdistance = (drawarea.Width - 10) / (cxmax - cxmin);
-
-                float cymax = cdata.Max();
-                float cymin = cdata.Min();
-                //float cymax = 600, cymin = 0;
-                if (cymax == cymin)
-                {
-                    cymax++;
-                    cymin--;
-                }
-                float cydistance = (hh - 10) / (cymax - cymin);
-
-                using (Pen temp = new Pen(Color.Gold, 1))
-                {
-                    using (GraphicsPath path = new GraphicsPath())
-                    {
-                        PointF[] points = new PointF[cdata.Count];
-                        for (int i = 0; i < cdata.Count; i++)
-                        {
-                            float x = (i * cxdistance) - (cxmin * cxdistance) + 5;
-                            float y = hh + hh + (hh - (cdata[i] - cymin) * cydistance) - 5;
-                            points[i] = new PointF(x, y);
-                        }
-                        path.AddLines(points);
-                        g.DrawPath(temp, path);
-
-                        using (StringFormat strf = new StringFormat())
-                        {
-                            strf.LineAlignment = StringAlignment.Far;
-                            strf.Alignment = StringAlignment.Far;
-                            g.DrawString(string.Format("1cycle elapsed {0}", cdata[cdata.Count - 1]), tooltipFont, Brushes.Black, this.panelMonitor.Width, hh + hh + hh - 13, strf);
-
-                            strf.LineAlignment = StringAlignment.Near;
-                            strf.Alignment = StringAlignment.Near;
-                            g.DrawString(string.Format("{0}", (long)cymax), tooltipFont, Brushes.Gold, 0, hh + hh + 5, strf);
-
-                            strf.LineAlignment = StringAlignment.Far;
-                            strf.Alignment = StringAlignment.Near;
-                            g.DrawString(string.Format("{0}", (long)cymin), tooltipFont, Brushes.Gold, 0, hh + hh + hh - 5, strf);
-                        }
+                        strf.LineAlignment = StringAlignment.Far;
+                        strf.Alignment = StringAlignment.Near;
+                        g.DrawString(string.Format("{0}", (long)mymin), tooltipFont, Brushes.White, 0, hh - 5, strf);
                     }
                 }
             }
-            catch (Exception ex)
+
+
+            List<int> tdata = this.accessTimes;
+
+            float txmax = tdata.Count;
+            float txmin = 0;
+            float txdistance = (drawarea.Width - 10) / (txmax - txmin);
+
+            float tymax = tdata.Max();
+            float tymin = tdata.Min();
+            //float tymax = 600, tymin = 0;
+            if (tymax == tymin)
             {
-                CommonController.Instance.PrintLog(ex.StackTrace);
+                tymax++;
+                tymin--;
             }
+            float tydistance = (hh - 10) / (tymax - tymin);
+
+            using (Pen temp = new Pen(Color.Pink, 1))
+            {
+                using (GraphicsPath path = new GraphicsPath())
+                {
+                    PointF[] points = new PointF[tdata.Count];
+                    for (int i = 0; i < tdata.Count; i++)
+                    {
+                        float x = (i * txdistance) - (txmin * txdistance) + 5;
+                        float y = hh + (hh - (tdata[i] - tymin) * tydistance) - 5;
+                        points[i] = new PointF(x, y);
+                    }
+                    path.AddLines(points);
+                    g.DrawPath(temp, path);
+
+                    using (StringFormat strf = new StringFormat())
+                    {
+                        strf.LineAlignment = StringAlignment.Far;
+                        strf.Alignment = StringAlignment.Far;
+                        g.DrawString(string.Format("{0}", tdata[tdata.Count - 1]), tooltipFont, Brushes.Black, this.panelMonitor.Width, hh + hh - 13, strf);
+
+                        strf.LineAlignment = StringAlignment.Near;
+                        strf.Alignment = StringAlignment.Near;
+                        g.DrawString(string.Format("{0}", (long)tymax), tooltipFont, Brushes.Pink, 0, hh + 5, strf);
+
+                        strf.LineAlignment = StringAlignment.Far;
+                        strf.Alignment = StringAlignment.Near;
+                        g.DrawString(string.Format("{0}", (long)tymin), tooltipFont, Brushes.Pink, 0, hh + hh - 5, strf);
+                    }
+                }
+            }
+
+
+
+            List<float> cdata = this.gapTimes;
+
+            float cxmax = cdata.Count;
+            float cxmin = 0;
+            float cxdistance = (drawarea.Width - 10) / (cxmax - cxmin);
+
+            float cymax = cdata.Max();
+            float cymin = cdata.Min();
+            //float cymax = 600, cymin = 0;
+            if (cymax == cymin)
+            {
+                cymax++;
+                cymin--;
+            }
+            float cydistance = (hh - 10) / (cymax - cymin);
+
+            using (Pen temp = new Pen(Color.Gold, 1))
+            {
+                using (GraphicsPath path = new GraphicsPath())
+                {
+                    PointF[] points = new PointF[cdata.Count];
+                    for (int i = 0; i < cdata.Count; i++)
+                    {
+                        float x = (i * cxdistance) - (cxmin * cxdistance) + 5;
+                        float y = hh + hh + (hh - (cdata[i] - cymin) * cydistance) - 5;
+                        points[i] = new PointF(x, y);
+                    }
+                    path.AddLines(points);
+                    g.DrawPath(temp, path);
+
+                    using (StringFormat strf = new StringFormat())
+                    {
+                        strf.LineAlignment = StringAlignment.Far;
+                        strf.Alignment = StringAlignment.Far;
+                        g.DrawString(string.Format("1cycle elapsed {0}", cdata[cdata.Count - 1]), tooltipFont, Brushes.Black, this.panelMonitor.Width, hh + hh + hh - 13, strf);
+
+                        strf.LineAlignment = StringAlignment.Near;
+                        strf.Alignment = StringAlignment.Near;
+                        g.DrawString(string.Format("{0}", (long)cymax), tooltipFont, Brushes.Gold, 0, hh + hh + 5, strf);
+
+                        strf.LineAlignment = StringAlignment.Far;
+                        strf.Alignment = StringAlignment.Near;
+                        g.DrawString(string.Format("{0}", (long)cymin), tooltipFont, Brushes.Gold, 0, hh + hh + hh - 5, strf);
+                    }
+                }
+            }
+
         }
 
         private void panelMonitor_MouseDown(object sender, MouseEventArgs e)
@@ -388,25 +382,14 @@ namespace ARAUniSimSIMBridge
                     for (int j = 0; j < osg.ReadSubscriptions.Count; j++)
                     {
                         OPCSubscription os = osg.ReadSubscriptions[j];
-                        CommonController.Instance.PrintLog("  " + os.Name);
+                        CommonController.Instance.PrintLog(os.Name);
 
                         if (os.ItemTypes == null) CommonController.Instance.PrintLog("itemtype null");
                         else
                         {
-                            CommonController.Instance.PrintLog("readtype" + os.ItemTypes.Length.ToString());
                             for (int k = 0; k < os.ItemTypes.Length; k++)
                             {
-                                CommonController.Instance.PrintLog(os.ItemTypes[k].Name);
-                            }
-                        }
-
-                        if (os.ItemValues == null) CommonController.Instance.PrintLog("ItemValues null");
-                        else
-                        {
-                            CommonController.Instance.PrintLog("readvalue" + os.ItemValues.Length.ToString());
-                            for (int k = 0; k < os.ItemValues.Length; k++)
-                            {
-                                CommonController.Instance.PrintLog(os.ItemValues[k].ToString());
+                                CommonController.Instance.PrintLog(string.Format("  {0} {1} {2}", os.ItemTypes[k].Name, os.ItemValues[k], os.Subscription.Items[k].ItemName));
                             }
                         }
                     }
@@ -414,27 +397,15 @@ namespace ARAUniSimSIMBridge
                     for (int j = 0; j < osg.WriteSubscriptions.Count; j++)
                     {
                         OPCSubscription os = osg.WriteSubscriptions[j];
-                        CommonController.Instance.PrintLog("  " + os.Name);
-
+                        CommonController.Instance.PrintLog(os.Name);
                         if (os.ItemTypes == null) CommonController.Instance.PrintLog("itemtype null");
                         else
                         {
-                            CommonController.Instance.PrintLog("writetype" + os.ItemTypes.Length.ToString());
                             for (int k = 0; k < os.ItemTypes.Length; k++)
                             {
-                                CommonController.Instance.PrintLog(os.ItemTypes[k].Name);
+                                CommonController.Instance.PrintLog(string.Format("  {0} {1} {2}", os.ItemTypes[k].Name, os.ItemValues[k], os.Subscription.Items[k].ItemName));
                             }
                         }
-                        if (os.ItemValues == null) CommonController.Instance.PrintLog("ItemValues null");
-                        else
-                        {
-                            CommonController.Instance.PrintLog("writevalue" + os.ItemValues.Length.ToString());
-                            for (int k = 0; k < os.ItemValues.Length; k++)
-                            {
-                                CommonController.Instance.PrintLog(os.ItemValues[k].ToString());
-                            }
-                        }
-
                     }
                     CommonController.Instance.PrintLog("===============");
                 }

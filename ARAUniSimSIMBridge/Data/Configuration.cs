@@ -14,6 +14,6 @@ namespace ARAUniSimSIMBridge.Data
         public double Foctor { get; set; }
         public int RunInterval { get; set; }
         public string PathMapping { get; set; }
-
+        public string OPCServerName { get; set; }
     }
 }

@@ -33,7 +33,6 @@ namespace ARAUniSimSIMBridge
             }
         }
 
-
         public ExtnUnitOperationContainer hyContainer;
         public Flowsheet flowsheet;
         public _SimulationCase simCase;
@@ -41,19 +40,14 @@ namespace ARAUniSimSIMBridge
         public Integrator integrator;
         public FixedDataTables hypdb;
 
-
         public List<PrivateController> Controllers { get; set; }
         public TreeModel TreemodelOPC { get; set; }
         public TreeModel TreemodelTag { get; set; }
         public List<OTSTagData> OTSTagList { get; set; }
 
-
-
-
         public double StepsOfOTS { get; set; }
         public string TimesOfReal { get; set; }
         public string TimesOfOTS { get; set; }
-
 
         public List<string> OPCLocalServerNames { get; set; }
 
@@ -61,12 +55,9 @@ namespace ARAUniSimSIMBridge
         public List<OTSDataTable> OTSReadDataTableList { get; set; }
         public List<OTSDataTable> OTSWriteDataTableList { get; set; }
 
-
-
         private bool IsTerminated = false;
         private bool IsRunningOTS = false;//init
         private Thread threadCheckSystem; //DRTF, Factor, modified
-
 
         public CommonController()
         {
@@ -79,9 +70,6 @@ namespace ARAUniSimSIMBridge
             this.OPCLocalServerNames = new List<string>();
             this.Controllers = new List<PrivateController>();
         }
-
-
-
 
         public void SetContainer(ExtnUnitOperationContainer Container)
         {
@@ -209,7 +197,6 @@ namespace ARAUniSimSIMBridge
             }
         }
 
-
         private void CheckARAExtensionSIMBridge()
         {
             Process[] pss = Process.GetProcesses();
@@ -240,7 +227,6 @@ namespace ARAUniSimSIMBridge
             this.Controllers.Add(controller);
 
         }
-
 
         public void UnregisterController(PrivateController controller)
         {
@@ -301,7 +287,6 @@ namespace ARAUniSimSIMBridge
             return result;
         }
 
-
         private string FindInstalledOLGA()
         {
             RegistryKey SoftwareKey = Registry.LocalMachine.OpenSubKey("Software", true).OpenSubKey("Microsoft", true).OpenSubKey("Windows", true).OpenSubKey("CurrentVersion", true).OpenSubKey("Uninstall", true);
@@ -324,7 +309,6 @@ namespace ARAUniSimSIMBridge
                         {
                             //this.txtOLGAEXE.Value = path;
                             //this.txtOLGAModel.Value = @"C:\Program Files (x86)\Schlumberger\OLGA 2015.1.1\Data\OPG Files\OPC-Server\Server-demo-with-opc_T\server-demo-with-opc.genkey";
-
                             //this.PrintLog(path);
                             return path;
                         }
@@ -334,6 +318,7 @@ namespace ARAUniSimSIMBridge
 
             return string.Empty;
         }
+
         private string FindInstalledOLGA(string path, string OLGAfilename)
         {
             //this.PrintLog(path);
@@ -375,8 +360,6 @@ namespace ARAUniSimSIMBridge
             return result;
         }
 
-
-
         public void SaveOLGAExecutablePath()
         {
             //string path = this.FindInstalledOLGA();
@@ -392,9 +375,6 @@ namespace ARAUniSimSIMBridge
                 xmlSerializer.Serialize(reader, cf);
             }
         }
-
-
-
 
         public void PrintLog(float msg)
         {
@@ -413,9 +393,6 @@ namespace ARAUniSimSIMBridge
             if (hyContainer != null)
                 hyContainer.Trace(msg, false);
         }
-
-
-
 
         public bool CheckDuplicatedOLGAOPCServer(PrivateController pc)
         {
@@ -705,7 +682,6 @@ namespace ARAUniSimSIMBridge
             }
         }
 
-
         private void GetTagList(UniSimDesign.Flowsheet fs, System.Collections.ObjectModel.Collection<Node> nodes)
         {
             Node fNode = new Node(fs.name);
@@ -911,8 +887,6 @@ namespace ARAUniSimSIMBridge
             }
         }
 
-
-
         /// <summary>
         /// loacal, network opc server list 불러오기.
         /// </summary>
@@ -1025,7 +999,6 @@ namespace ARAUniSimSIMBridge
                 pc.txtLocalServers.Values = this.OPCLocalServerNames.ToArray();
             }
         }
-
 
         public bool AddMappingOPCOTS(List<string> serverNames, List<MappingData> MappingList, PrivateController pc)
         {
@@ -1573,7 +1546,6 @@ namespace ARAUniSimSIMBridge
             return exsist;
         }
 
-
         public int CountOPCServer(PrivateController pc)
         {
             return GetOPCServers(pc).Count;
@@ -1621,8 +1593,6 @@ namespace ARAUniSimSIMBridge
             }
             return result;
         }
-
-
 
         //////////////////////////////////////////////////////////////////
         public void BrowseChildren(OPCServer osg, Opc.Da.Server daserver, System.Collections.ObjectModel.Collection<Node> nodes, string itemId = null)
@@ -1688,7 +1658,6 @@ namespace ARAUniSimSIMBridge
                 }
             }
         }
-
 
         ////////////////////////////////////////////////////////////////
         //flowsheet 에서 이름으로 operation찾기
@@ -1819,7 +1788,6 @@ namespace ARAUniSimSIMBridge
             }
         }
 
-
         //opc tree 에서 node 찾기
         public Node FindServerNode(string nodename)
         {
@@ -1892,6 +1860,13 @@ namespace ARAUniSimSIMBridge
             return result;
         }
 
+        public void ResetMapping()
+        {
+            for (int i = 0; i < this.Controllers.Count; i++)
+            {
+                this.Controllers[i].IsApplyMapping = false;
+            }
+        }
         //현재 연결된 모든 opc server 아이템 지우기.
         public void RemoveOPCServers(PrivateController pc)
         {

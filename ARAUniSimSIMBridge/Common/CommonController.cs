@@ -100,21 +100,18 @@ namespace ARAUniSimSIMBridge
                 //opc서버 저장 상태
                 this.IsTerminated = false; //start
                 this.IsRunningOTS = false; //start
+
+                /*
                 this.threadCheckSystem = new Thread(this.procCheckSystem);
-                this.threadCheckSystem.IsBackground = false;
+                this.threadCheckSystem.IsBackground = true;
                 this.threadCheckSystem.Name = "CheckSystem";
-                this.threadCheckSystem.Start();
+                this.threadCheckSystem.Start();*/
 
                 sw.Stop();
                 //this.PrintLog(sw.ElapsedMilliseconds + ", SetContainer");
             }
 
         }
-
-        /// <summary>
-        /// 일자별 스냅샷 저장하기 위한 경로
-        /// </summary>
-        public string PathTodayModelSnapshotDirectory { get; set; }
 
         /// <summary>
         /// unisim 모델별 스냅샷 경로
@@ -184,6 +181,7 @@ namespace ARAUniSimSIMBridge
                         checkOlgaPath = false;
                     }
                 }
+
             }
             else
             {
@@ -230,22 +228,20 @@ namespace ARAUniSimSIMBridge
 
         public void UnregisterController(PrivateController controller)
         {
-            this.solver.CanSolve = false;
-
             this.Controllers.Remove(controller);
 
             if (this.Controllers.Count == 0)
             {
-                this.threadCheckSystem.Abort();
-                this.threadCheckSystem = null;
+                this.hyContainer = null;
+ 
+                if (this.threadCheckSystem != null)
+                {
+                    this.threadCheckSystem.Abort();
+                    this.threadCheckSystem = null;
+                }
 
                 this.IsTerminated = true; //end
                 this.IsRunningOTS = false; //end
-
-                try { FormMonitor.Instance.Dispose(); }
-                catch { }
-                try { FormMapping.Instance.Dispose(); }
-                catch { }
 
                 this.OPCServerList.Clear();
                 this.OTSTagList.Clear();
@@ -256,7 +252,9 @@ namespace ARAUniSimSIMBridge
 
                 this.TreemodelOPC.Nodes.Clear();
                 this.TreemodelTag.Nodes.Clear();
-                this.hyContainer = null;
+
+                FormMonitor.Instance.Dispose();
+                FormMapping.Instance.Dispose();
             }
 
         }
@@ -422,7 +420,7 @@ namespace ARAUniSimSIMBridge
                 this.OTSModelFileModifiedTIme = File.GetLastAccessTime(this.simCase.FullName);
                 while (IsTerminated == false)
                 {
-                    /***************************************************************/
+
                     //check desired real time factor 
                     RealVariable rv = (RealVariable)bd.get_BackDoorVariable(":ExtraData.107").Variable;
                     if (rv.Value != DTRF)
@@ -452,26 +450,26 @@ namespace ARAUniSimSIMBridge
 
 
 
-                    if (IsTerminated) break;
-                    /***************************************************************/
-                    /*for (int i = 0; i < this.Controllers.Count; i++)
-                    {
-                        PrivateController pc = this.Controllers[i];
-                        if (pc.preRealTimeFactor != pc.dblRealTimeFactor.Value)
-                        {
-                            this.SetRealtimeFactor(pc.dblRealTimeFactor.Value);
-                            break;
-                        }
-                    }*/
+                    //if (IsTerminated) break;
+                    //for (int i = 0; i < this.Controllers.Count; i++)
+                    //{
+                    //    PrivateController pc = this.Controllers[i];
+                    //    if (pc.preRealTimeFactor != pc.dblRealTimeFactor.Value)
+                    //    {
+                    //        this.SetRealtimeFactor(pc.dblRealTimeFactor.Value);
+                    //        break;
+                    //    }
+                    //}
 
 
 
 
                     if (IsTerminated) break;
-                    /***************************************************************/
                     //check data exchange step 
                     for (int i = 0; i < this.Controllers.Count; i++)
                     {
+                        if (IsTerminated) break;
+
                         PrivateController pc = this.Controllers[i];
                         double dbl = pc.dblOLGARunInterval.GetValue();
                         if (dbl < 1)
@@ -482,24 +480,19 @@ namespace ARAUniSimSIMBridge
 
 
                     if (IsTerminated) break;
-                    /***************************************************************/
                     // chek model file change 
                     DateTime newTime = File.GetLastAccessTime(this.simCase.FullName);
                     if (this.OTSModelFileModifiedTIme.CompareTo(newTime) != 0)
                     {
                         this.OTSModelFileModifiedTIme = newTime;
 
-                        this.PathTodayModelSnapshotDirectory = string.Format("{0}\\{1}", this.PathModelSnapshotDirectory, DateTime.Now.ToString("yyyMMdd"));
-                        if (Directory.Exists(PathTodayModelSnapshotDirectory) == false)
-                        {
-                            Directory.CreateDirectory(PathTodayModelSnapshotDirectory);
-                        }
-
                         for (int i = 0; i < this.Controllers.Count; i++)
                         {
+                            if (IsTerminated) break;
+
                             PrivateController pc = this.Controllers[i];
 
-                            string olgasnapfile = string.Format("{0}\\{1}_{2}", PathTodayModelSnapshotDirectory, DateTime.Now.ToString("yyyMMddhhmmss"), pc.UniqueID);
+                            string olgasnapfile = string.Format("{0}\\{1}", this.PathModelSnapshotDirectory, pc.UniqueID);
                             if (pc.SaveOLGASnapshot(olgasnapfile))
                             {
                                 pc.txtOLGASnapshot.Value = olgasnapfile + ".rsw";
@@ -508,18 +501,17 @@ namespace ARAUniSimSIMBridge
                             pc.SaveMappingList(true);
                             pc.SaveConfiguration();
                         }
-
                         this.DeleteNotUsingController();
                     }
 
 
                     if (IsTerminated) break;
-                    /***************************************************************/
                     // chek opc status
                     for (int i = 0; i < this.Controllers.Count; i++)
                     {
-                        PrivateController pc = this.Controllers[i];
+                        if (IsTerminated) break;
 
+                        PrivateController pc = this.Controllers[i];
                         if (pc.dblConnectedOPC.Value == 1)
                         {
                             Opc.Server existOlga = this.FindOLGAOPCServer(pc.OPCServerName);
@@ -543,8 +535,8 @@ namespace ARAUniSimSIMBridge
                     }
 
 
+
                     if (IsTerminated) break;
-                    /***************************************************************/
                     // chek ots start
                     if (this.integrator.IsRunning) //시작했다면
                     {
@@ -560,6 +552,8 @@ namespace ARAUniSimSIMBridge
                         {
                             for (int i = 0; i < this.Controllers.Count; i++)
                             {
+                                if (IsTerminated) break;
+
                                 PrivateController pc = this.Controllers[i];
                                 pc.StopSimulation();
                                 pc.dblRunningSim.SetValue(0);//중지 표시.
@@ -569,29 +563,28 @@ namespace ARAUniSimSIMBridge
                     }
 
 
-
-
                     if (this.integrator.Mode != IntegratorMode_enum.imManual) this.integrator.Mode = IntegratorMode_enum.imManual;
-
 
                     Thread.Sleep(10);
                 }
             }
             catch (Exception ex)
             {
-                this.PrintLog(ex.StackTrace);
+                // this.PrintLog(ex.StackTrace);
             }
         }
 
         private void StartSimulation()
         {
             bool isprepare = true;
+            this.InitDataTable();
+
             for (int i = 0; i < this.Controllers.Count; i++)
             {
                 PrivateController pc = this.Controllers[i];
                 if (pc.PrepareStartSimulation() == false) isprepare = false;
             }
-            if (isprepare)
+            if (isprepare && IsTerminated == false)
             {
                 for (int i = 0; i < this.Controllers.Count; i++)
                 {
@@ -619,65 +612,47 @@ namespace ARAUniSimSIMBridge
             string[] files = Directory.GetFiles(this.PathModelWorkDirectory);
             for (int i = files.Length - 1; i >= 0; i--)
             {
-                try
+                string path = files[i];
+
+                string filename = Path.GetFileNameWithoutExtension(path);
+
+                bool exists = false;
+                for (int j = 0; j < ids.Count; j++)
                 {
-                    string path = files[i];
-
-                    string filename = Path.GetFileNameWithoutExtension(path);
-
-
-                    bool exists = false;
-                    for (int j = 0; j < ids.Count; j++)
+                    if (filename.Contains(ids[j]))
                     {
-                        if (filename.Contains(ids[j]))
-                        {
-                            exists = true;
-                            break;
-                        }
-                    }
-
-                    //this.PrintLog(filename + ", " + exists);
-                    if (exists == false)
-                    {
-                        File.Delete(path);
+                        exists = true;
+                        break;
                     }
                 }
-                catch (Exception ex)
+
+                //this.PrintLog(filename + ", " + exists);
+                if (exists == false)
                 {
-                    this.PrintLog(ex.StackTrace);
+                    File.Delete(path);
                 }
             }
 
 
-
-
-            files = Directory.GetFiles(this.PathTodayModelSnapshotDirectory);
+            files = Directory.GetFiles(this.PathModelSnapshotDirectory);
             for (int i = files.Length - 1; i >= 0; i--)
             {
-                try
+                string path = files[i];
+                string filename = Path.GetFileNameWithoutExtension(path);
+
+                bool exists = false;
+                for (int j = 0; j < ids.Count; j++)
                 {
-                    string path = files[i];
-                    string filename = Path.GetFileNameWithoutExtension(path);
-
-
-                    bool exists = false;
-                    for (int j = 0; j < ids.Count; j++)
+                    if (filename.Contains(ids[j]))
                     {
-                        if (filename.Contains(ids[j]))
-                        {
-                            exists = true;
-                            break;
-                        }
-                    }
-
-                    if (exists == false)
-                    {
-                        File.Delete(path);
+                        exists = true;
+                        break;
                     }
                 }
-                catch (Exception ex)
+
+                if (exists == false)
                 {
-                    this.PrintLog(ex.StackTrace);
+                    File.Delete(path);
                 }
             }
         }
@@ -1003,14 +978,8 @@ namespace ARAUniSimSIMBridge
         public bool AddMappingOPCOTS(List<string> serverNames, List<MappingData> MappingList, PrivateController pc)
         {
             bool noError = true;
-            /*
-            if (this.ControllerIndex(pc) == 0)
-            {
-               
-            }*/
 
             this.ResetControllerData(pc);
-
 
             for (int maini = 0; maini < serverNames.Count; maini++)
             {
@@ -1018,8 +987,7 @@ namespace ARAUniSimSIMBridge
 
                 /*********************************************************************************/
                 // hysys self
-                /*
-                if (this.ControllerIndex(pc) == 0 && serverName.Equals("hysys", StringComparison.CurrentCultureIgnoreCase))
+                /*if (this.GetControllerIndex(pc) == 0 && serverName.Equals("hysys", StringComparison.CurrentCultureIgnoreCase))
                 {
                     List<MappingData> selfMapping = (from query in MappingList.AsEnumerable()
                                                      where query.FromType.Equals(serverName, StringComparison.CurrentCultureIgnoreCase)
@@ -1737,7 +1705,6 @@ namespace ARAUniSimSIMBridge
 
             this.OTSReadDataTableList.Clear();
             this.OTSWriteDataTableList.Clear();
-
             for (int i = 0; i < OPCServerList.Count; i++)
             {
                 this.OPCServerList[i].RemoveAllGroup(false);
@@ -1746,46 +1713,41 @@ namespace ARAUniSimSIMBridge
 
         public void ResetControllerData(PrivateController pc)
         {
-            try
+
+            for (int i = this.hypdb.Count - 1; i >= 0; i--)
             {
-                for (int i = this.hypdb.Count - 1; i >= 0; i--)
+                UniSimDesign.DataTable tbl = this.hypdb[i] as UniSimDesign.DataTable;
+                if (tbl.name.StartsWith(string.Format("ara_{0}", pc.UniqueID)))
                 {
-                    UniSimDesign.DataTable tbl = this.hypdb[i] as UniSimDesign.DataTable;
-                    if (tbl.name.StartsWith(string.Format("ara_{0}", pc.UniqueID)))
-                    {
-                        tbl.EndTransfer();
-                        this.hypdb.Remove(i);
-                    }
-                }
-
-                for (int i = this.OTSReadDataTableList.Count - 1; i >= 0; i--)
-                {
-                    OTSDataTable odt = this.OTSReadDataTableList[i];
-                    if (odt.Controller == pc)
-                    {
-                        this.OTSReadDataTableList.RemoveAt(i);
-                    }
-                }
-                for (int i = this.OTSWriteDataTableList.Count - 1; i >= 0; i--)
-                {
-                    OTSDataTable odt = this.OTSWriteDataTableList[i];
-                    if (odt.Controller == pc)
-                    {
-                        this.OTSWriteDataTableList.RemoveAt(i);
-                    }
-                }
-
-
-                List<OPCServer> myServers = this.GetOPCServers(pc);
-                for (int i = 0; i < myServers.Count; i++)
-                {
-                    myServers[i].RemoveAllGroup(false);
+                    tbl.EndTransfer();
+                    this.hypdb.Remove(i);
                 }
             }
-            catch (Exception ex)
+
+            for (int i = this.OTSReadDataTableList.Count - 1; i >= 0; i--)
             {
-                this.PrintLog(ex.StackTrace);
+                OTSDataTable odt = this.OTSReadDataTableList[i];
+                if (odt.Controller == pc)
+                {
+                    this.OTSReadDataTableList.RemoveAt(i);
+                }
             }
+            for (int i = this.OTSWriteDataTableList.Count - 1; i >= 0; i--)
+            {
+                OTSDataTable odt = this.OTSWriteDataTableList[i];
+                if (odt.Controller == pc)
+                {
+                    this.OTSWriteDataTableList.RemoveAt(i);
+                }
+            }
+
+
+            List<OPCServer> myServers = this.GetOPCServers(pc);
+            for (int i = 0; i < myServers.Count; i++)
+            {
+                myServers[i].RemoveAllGroup(false);
+            }
+
         }
 
         //opc tree 에서 node 찾기
@@ -1860,13 +1822,7 @@ namespace ARAUniSimSIMBridge
             return result;
         }
 
-        public void ResetMapping()
-        {
-            for (int i = 0; i < this.Controllers.Count; i++)
-            {
-                this.Controllers[i].IsApplyMapping = false;
-            }
-        }
+
         //현재 연결된 모든 opc server 아이템 지우기.
         public void RemoveOPCServers(PrivateController pc)
         {
@@ -1876,16 +1832,11 @@ namespace ARAUniSimSIMBridge
 
                 if (osg.Controller == pc)
                 {
-                    try
-                    {
-                        osg.RemoveAllGroup(true);
-                        osg.Server.Disconnect();
-                        osg.Server.Dispose();
-                    }
-                    catch (Exception ex)
-                    {
-                        this.PrintLog("RemoveOPCServers " + ex.StackTrace);
-                    }
+
+                    osg.RemoveAllGroup(true);
+                    osg.Server.Disconnect();
+                    osg.Server.Dispose();
+
                     this.OPCServerList.RemoveAt(i);
                 }
             }
@@ -1923,18 +1874,13 @@ namespace ARAUniSimSIMBridge
 
                 if (serverNames.Contains(osg.Server.Name) == false)
                 {
-                    try
-                    {
-                        Node svrNode = this.FindServerNode(osg.Name);
-                        svrNode.Nodes.Clear();
-                        //svrNode.Image = FormBrowser.Instance.imagelist.Images[2];
-                        svrNode.Image = Properties.Resources.server;
-                        osg.RemoveAllGroup(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        this.PrintLog("DisconnectNotusingServer : " + ex.StackTrace);
-                    }
+
+                    Node svrNode = this.FindServerNode(osg.Name);
+                    svrNode.Nodes.Clear();
+                    //svrNode.Image = FormBrowser.Instance.imagelist.Images[2];
+                    svrNode.Image = Properties.Resources.server;
+                    osg.RemoveAllGroup(false);
+
                 }
             }
         }
@@ -1965,31 +1911,25 @@ namespace ARAUniSimSIMBridge
                 dasvr = ns.Server;
             }
 
-            try
-            {
-                if (dasvr.IsConnected == false)
-                {
-                    if (ns.Connect())
-                    {
-                        this.BrowseChildren(ns, dasvr, svrNode.Nodes, null);
-                        //svrNode.Image = FormBrowser.Instance.imagelist.Images[3];
-                        svrNode.Image = Properties.Resources.server_link;
 
-                        pc.SetStatus(extensionStatus.Connected);
-                    }
-                    else
-                    {
-                        this.PrintLog("can not connect");
-                        result = false;
-                    }
-                }
-                result = true;
-            }
-            catch (Exception ex)
+            if (dasvr.IsConnected == false)
             {
-                this.PrintLog(ex.StackTrace);
-                result = false;
+                if (ns.Connect())
+                {
+                    this.BrowseChildren(ns, dasvr, svrNode.Nodes, null);
+                    //svrNode.Image = FormBrowser.Instance.imagelist.Images[3];
+                    svrNode.Image = Properties.Resources.server_link;
+
+                    pc.SetStatus(extensionStatus.Connected);
+                }
+                else
+                {
+                    this.PrintLog("can not connect");
+                    result = false;
+                }
             }
+            result = true;
+
 
 
             return result;
@@ -1999,29 +1939,23 @@ namespace ARAUniSimSIMBridge
         public Opc.Server FindOLGAOPCServer(string OPCServerName)
         {
             Opc.Server result = null;
-            try
+
+            using (ServerEnumerator discovery = new OpcCom.ServerEnumerator())
             {
-                using (ServerEnumerator discovery = new OpcCom.ServerEnumerator())
+                Opc.Server[] servers2 = discovery.GetAvailableServers(Specification.COM_DA_20, null, null);
+                if (servers2 != null)
                 {
-                    Opc.Server[] servers2 = discovery.GetAvailableServers(Specification.COM_DA_20, null, null);
-                    if (servers2 != null)
+                    foreach (Opc.Server server in servers2)
                     {
-                        foreach (Opc.Server server in servers2)
+                        if (server.Name.StartsWith(OPCServerName))
                         {
-                            if (server.Name.StartsWith(OPCServerName))
-                            {
-                                result = server;
-                                break;
-                            }
+                            result = server;
+                            break;
                         }
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                this.PrintLog(ex.StackTrace);
-                this.PrintLog(ex.Message);
-            }
+
             return result;
         }
 

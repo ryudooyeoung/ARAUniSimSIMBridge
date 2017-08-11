@@ -36,6 +36,7 @@ namespace ARAUniSimSIMBridge
         private ExtnDynUnitOpContainer dynContainer;
 
         private PrivateController controller = null;
+        bool isLoaded = false;
         public ARASIMBridge()
         {
         }
@@ -47,11 +48,8 @@ namespace ARAUniSimSIMBridge
         public int Initialize(ExtnUnitOperationContainer Container, bool IsRecalling)
         {
             this.hyContainer = Container;
-
-
             this.controller = new PrivateController();
             this.controller.SetContainer(this.hyContainer);
-
 
             if (IsRecalling) { }
 
@@ -60,25 +58,26 @@ namespace ARAUniSimSIMBridge
 
         public void Execute(bool isForgetpass)
         {
-            try
-            {
-                //hyContainer.Trace("Execute ", false); 
-                if (isForgetpass == true) { return; }
-            }
-            catch
-            {
-            }
+            //hyContainer.Trace("Execute ", false); 
+            if (isForgetpass == true) { return; }
         }
 
         ///////   Shared Methods
         public void StatusQuery(ObjectStatus Status)
         {
-            //Controller.Instance.PrintLog("StatusQuery");
             try
             {
+
                 bool ignore = ((_IOperation)hyContainer.ExtensionInterface).IsIgnored;
                 if (ignore == true) { return; }
                 //((_IOperation)Status.Parent).name = "ARA SIMBridge";
+
+                if (this.isLoaded == false)
+                {
+                    this.controller.SetBaseDocument();
+                    this.controller.LoadConfiguration();
+                    this.isLoaded = true;
+                }
             }
             catch { }
         }
@@ -104,9 +103,9 @@ namespace ARAUniSimSIMBridge
             }
             else if (Variable.Tag == "msgConnectOPC") //opc 서버 실행
             {
-                this.controller.ConnectOPCServer(); 
+                this.controller.ConnectOPCServer();
             }
-          
+
             else if (Variable.Tag == "msgLoadMapping") //태그 매핑 불러오기
             {
                 this.controller.LoadMappingList(string.Empty);
@@ -115,7 +114,7 @@ namespace ARAUniSimSIMBridge
             {
                 this.controller.SaveMappingList();
             }
-            else if (Variable.Tag == "msgResetMapping") //태그 매핑 저장
+            else if (Variable.Tag == "msgResetMapping") //태그 매핑 clear
             {
                 this.controller.ResetMappingList();
             }
@@ -145,7 +144,8 @@ namespace ARAUniSimSIMBridge
             dynContainer = pContainer;
             HoldupExist = false;
             MyVersion = (int)CurrentExtensionVersion_enum.extnCurrentVersion;
-            // Controller.Instance.PrintLog("DynInitialize");
+
+
         }
 
         public bool InitializeSystem(bool ForceInit)
@@ -204,18 +204,12 @@ namespace ARAUniSimSIMBridge
 
         ///////  about windows method  
         /*public void OnView(object msgvar)
-        {
-            try  { formSIMBridge.Show(); }
-            catch (Exception ex) { this.PrintLog(ex.StackTrace); }
-        }*/
-
-
+        {}*/
 
         public void Terminate()
         {
             //Controller.Instance.PrintLog("Terminate");
             this.controller.RemoveData();
         }
-
     }
 }

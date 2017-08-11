@@ -43,58 +43,51 @@ namespace ARAUniSimSIMBridge.Data
         public void SelfDataExchange()
         {
 
-            try
+            OPCSubscription selfRead = null;
+            for (int subi = 0; subi < this.ReadSubscriptions.Count; subi++)
             {
-                OPCSubscription selfRead = null;
-                for (int subi = 0; subi < this.ReadSubscriptions.Count; subi++)
+                if (this.ReadSubscriptions[subi].Type == 2)
                 {
-                    if (this.ReadSubscriptions[subi].Type == 2)
-                    {
-                        selfRead = this.ReadSubscriptions[subi];
-                        break;
-                    }
-                }
-
-                OPCSubscription selfWrite = null;
-                for (int subi = 0; subi < this.WriteSubscriptions.Count; subi++)
-                {
-                    if (this.WriteSubscriptions[subi].Type == 2)
-                    {
-                        selfWrite = this.WriteSubscriptions[subi];
-                        break;
-                    }
-                }
-
-
-                if (selfRead != null && selfWrite != null)
-                {
-                    selfRead.ItemValues = selfRead.Subscription.Read(selfRead.Subscription.Items);
-
-                    List<Opc.Da.ItemValue> values = new List<ItemValue>();
-
-                    for (int i = 0; i < selfRead.ItemValues.Length; i++)
-                    {
-                        Opc.Da.Item item = selfWrite.Subscription.Items[i];
-                        Opc.Da.ItemValueResult ivr = selfRead.ItemValues[i];
-
-                        System.Type wt = selfWrite.ItemTypes[i];
-                        System.Type rt = selfRead.ItemTypes[i];
-
-                        object value = ivr.Value;
-                        if (wt != rt)
-                        {
-                            value = Activator.CreateInstance(wt);
-                        }
-
-                        values.Add(new ItemValue(item) { Value = value });
-                    }
-                    selfWrite.ItemValues = selfRead.ItemValues;
-                    selfWrite.Subscription.Write(values.ToArray());
+                    selfRead = this.ReadSubscriptions[subi];
+                    break;
                 }
             }
-            catch (Exception ex)
+
+            OPCSubscription selfWrite = null;
+            for (int subi = 0; subi < this.WriteSubscriptions.Count; subi++)
             {
-                CommonController.Instance.PrintLog("dddddddddddddddd" + ex.StackTrace);
+                if (this.WriteSubscriptions[subi].Type == 2)
+                {
+                    selfWrite = this.WriteSubscriptions[subi];
+                    break;
+                }
+            }
+
+
+            if (selfRead != null && selfWrite != null)
+            {
+                selfRead.ItemValues = selfRead.Subscription.Read(selfRead.Subscription.Items);
+
+                List<Opc.Da.ItemValue> values = new List<ItemValue>();
+
+                for (int i = 0; i < selfRead.ItemValues.Length; i++)
+                {
+                    Opc.Da.Item item = selfWrite.Subscription.Items[i];
+                    Opc.Da.ItemValueResult ivr = selfRead.ItemValues[i];
+
+                    System.Type wt = selfWrite.ItemTypes[i];
+                    System.Type rt = selfRead.ItemTypes[i];
+
+                    object value = ivr.Value;
+                    if (wt != rt)
+                    {
+                        value = Activator.CreateInstance(wt);
+                    }
+
+                    values.Add(new ItemValue(item) { Value = value });
+                }
+                selfWrite.ItemValues = selfRead.ItemValues;
+                selfWrite.Subscription.Write(values.ToArray());
             }
         }
 
@@ -190,6 +183,7 @@ namespace ARAUniSimSIMBridge.Data
             }
             catch (Exception ex)
             {
+                CommonController.Instance.PrintLog("RemoveAllGroup , " + ex.GetType().Name);
                 CommonController.Instance.PrintLog(ex.StackTrace);
             }
 
@@ -255,41 +249,33 @@ namespace ARAUniSimSIMBridge.Data
         private bool SetOLGACmd(ref Opc.Da.Subscription cmd)
         {
             bool result = true;
-            try
+
+            cmd.RemoveItems(cmd.Items);
+            List<Opc.Da.Item> cmdlist = new List<Opc.Da.Item>();
+            cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.ExternalClock", this.Controller.OLGAModelName))); //0
+            cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.TIME", this.Controller.OLGAModelName))); //1
+            cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.State", this.Controller.OLGAModelName))); //2
+            cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.LoadSnap", this.Controller.OLGAModelName)));//3
+            cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.LoadSnap.File", this.Controller.OLGAModelName)));//4
+            cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.SaveSnap", this.Controller.OLGAModelName)));//5
+            cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.SaveSnap.File", this.Controller.OLGAModelName)));//6
+            cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.LastMessage", this.Controller.OLGAModelName)));//7
+
+            ItemResult[] ir = cmd.AddItems(cmdlist.ToArray());
+
+            StringBuilder strb = new StringBuilder();
+            for (int i = 0; i < ir.Length; i++)
             {
-                cmd.RemoveItems(cmd.Items);
-                List<Opc.Da.Item> cmdlist = new List<Opc.Da.Item>();
-                cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.ExternalClock", this.Controller.OLGAModelName))); //0
-                cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.TIME", this.Controller.OLGAModelName))); //1
-                cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.State", this.Controller.OLGAModelName))); //2
-                cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.LoadSnap", this.Controller.OLGAModelName)));//3
-                cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.LoadSnap.File", this.Controller.OLGAModelName)));//4
-                cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.SaveSnap", this.Controller.OLGAModelName)));//5
-                cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.SaveSnap.File", this.Controller.OLGAModelName)));//6
-                cmdlist.Add(OPCServer.CreateOPCItem(string.Format("Sim.{0}.LastMessage", this.Controller.OLGAModelName)));//7
-
-                ItemResult[] ir = cmd.AddItems(cmdlist.ToArray());
-
-                StringBuilder strb = new StringBuilder();
-                for (int i = 0; i < ir.Length; i++)
+                if (ir[i].ResultID.Failed())
                 {
-                    if (ir[i].ResultID.Failed())
-                    {
-                        result = false;
-                        strb.AppendFormat("{0}\n", ir[i].ItemName);
-                    }
-                }
-                if (result == false)
-                {
-                    strb.Insert(0, "Check OLGA OPC Server configuration, can't find the tag\n");
-                    CommonController.Instance.PrintLog(strb.ToString());
-
+                    result = false;
+                    strb.AppendFormat("{0}\n", ir[i].ItemName);
                 }
             }
-            catch (Exception ex)
+            if (result == false)
             {
-                CommonController.Instance.PrintLog(ex.StackTrace);
-                result = false;
+                strb.Insert(0, "Check OLGA OPC Server configuration, can't find the tag\n");
+                CommonController.Instance.PrintLog(strb.ToString());
             }
 
             return result;

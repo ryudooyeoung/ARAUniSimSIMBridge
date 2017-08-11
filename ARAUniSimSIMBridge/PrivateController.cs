@@ -41,6 +41,7 @@ namespace ARAUniSimSIMBridge
         public InternalTextFlexVariable txtLocalServers { get; set; }
         public InternalTextFlexVariable txtNetworkServers { get; set; }
         private InternalTextVariable txtUniqueID;
+        private InternalTextVariable txtCreateDate;
 
 
         /// <summary>
@@ -127,10 +128,10 @@ namespace ARAUniSimSIMBridge
         }
 
 
-
+        private ExtnUnitOperationContainer hyContainer;
         public void SetContainer(ExtnUnitOperationContainer hyContainer)
         {
-
+            this.hyContainer = hyContainer;
 
             this.txtOLGAExecutable = (InternalTextVariable)hyContainer.FindVariable("txtOLGAExecutable").Variable;
 
@@ -144,7 +145,7 @@ namespace ARAUniSimSIMBridge
 
 
 
-
+            this.txtCreateDate = (InternalTextVariable)hyContainer.FindVariable("txtCreateDate").Variable;
             this.txtUniqueID = (InternalTextVariable)hyContainer.FindVariable("txtUniqueID").Variable;
 
             this.dblOPCServerSelected = (InternalRealVariable)hyContainer.FindVariable("dblOPCServerSelected").Variable;
@@ -191,13 +192,6 @@ namespace ARAUniSimSIMBridge
 
             this.txtLocalServers.SetBounds(CommonController.Instance.OPCLocalServerNames.Count);
             this.txtLocalServers.Values = CommonController.Instance.OPCLocalServerNames.ToArray();
-
-            this.SetBaseDocument();
-
-
-
-            //마지막 설정 환경 불러오기.
-            this.LoadConfiguration();
         }
 
 
@@ -213,8 +207,6 @@ namespace ARAUniSimSIMBridge
             {
                 this.dblOPCServerSelected.Value = 22;
             }
-
-            this.OPCServerName = string.Empty;
         }
 
         public void SelectNetworkServer()
@@ -282,53 +274,52 @@ namespace ARAUniSimSIMBridge
 
         public void LoadOLGASanpshot(string path)
         {
-            try
+            List<OPCServer> myOPCServers = CommonController.Instance.GetOPCServers(this);
+            for (int i = 0; i < myOPCServers.Count; i++)
             {
-                List<OPCServer> myOPCServers = CommonController.Instance.GetOPCServers(this);
-                for (int i = 0; i < myOPCServers.Count; i++)
+                OPCServer osg = myOPCServers[i];
+                if (osg.Server.Name.StartsWith("SPT."))
                 {
-                    OPCServer osg = myOPCServers[i];
-                    if (osg.Server.Name.StartsWith("SPT."))
+                    OPCSubscription os = osg.CommandSubscription;
+                    Opc.Da.Subscription cg = os.Subscription; //cmd
+
+                    Opc.Da.ItemValue file = new Opc.Da.ItemValue(cg.Items[4]);
+                    file.Value = path;
+
+                    Opc.Da.ItemValue flag = new Opc.Da.ItemValue(cg.Items[3]);
+                    flag.Value = true;
+                    cg.Write(new Opc.Da.ItemValue[] { file, flag });
+
+                    os.ItemValues = cg.Read(cg.Items);
+                    while ((string)os.ItemValues[2].Value == "STATE_COMMAND")
                     {
-                        OPCSubscription os = osg.CommandSubscription;
-                        Opc.Da.Subscription cg = os.Subscription; //cmd
-
-                        Opc.Da.ItemValue file = new Opc.Da.ItemValue(cg.Items[4]);
-                        file.Value = path;
-
-                        Opc.Da.ItemValue flag = new Opc.Da.ItemValue(cg.Items[3]);
-                        flag.Value = true;
-                        cg.Write(new Opc.Da.ItemValue[] { file, flag });
-
+                        Thread.Sleep(1);
                         os.ItemValues = cg.Read(cg.Items);
-                        while ((string)os.ItemValues[2].Value == "STATE_COMMAND")
-                        {
-                            Thread.Sleep(1);
-                            os.ItemValues = cg.Read(cg.Items);
-                        }
-
-                        break;
                     }
+
+                    break;
                 }
             }
-            catch (Exception ex)
-            {
-                CommonController.Instance.PrintLog(ex.StackTrace);
-            }
+
         }
-
-
-
-
 
 
         private string PathModelConfigXML = string.Empty;
         private string PathLeastmappingXML = string.Empty;
-        private void SetBaseDocument()
+        public void SetBaseDocument()
         {
+            if (string.IsNullOrEmpty(this.txtCreateDate.Value))
+            {
+                this.txtCreateDate.Value = DateTime.Now.ToString("yyyyMMddhhmmssff");//새로만들어짐
+            }
+            else
+            {
+                //기존에 있었음 
+            }
+
             if (string.IsNullOrEmpty(this.txtUniqueID.Value))
             {
-                this.txtUniqueID.Value = DateTime.Now.ToString("yyyyMMddhhmmssff");
+                this.txtUniqueID.Value = this.hyContainer.name;
             }
 
             this.PathModelConfigXML = string.Format("{0}\\{1}.xml", CommonController.Instance.PathModelWorkDirectory, this.txtUniqueID.Value);
@@ -362,19 +353,6 @@ namespace ARAUniSimSIMBridge
                 this.IsApplyMapping = false; //ShowBrowser
                 this.SetMappingTable(); //show browser
             }
-
-            /*
-            FormBrowser.Instance.SetBrowser();
-            FormBrowser.Instance.SetController(this);
-            FormBrowser.Instance.UpdateOPCTable();
-            FormBrowser.Instance.UpdateMappingTable();
-            FormBrowser.Instance.ShowDialog();
-
-            if (FormBrowser.Instance.ResultOK)
-            {
-                this.IsApplyMapping = false; //ShowBrowser
-                this.SetMappingTable(); //show browser
-            }*/
         }
 
         public void ShowMonitor()
@@ -396,13 +374,12 @@ namespace ARAUniSimSIMBridge
             this.IsTerminated = true;
             this.IsStartDataExchange = false; //RemoveData
 
-            try { CommonController.Instance.RemoveOPCServers(this); }
-            catch { }
+            CommonController.Instance.RemoveOPCServers(this);
 
-            try { this.KillMyOLGA(); }
-            catch { }
+            this.KillMyOLGA();
 
             this.threadDataExchange.Abort();
+            this.threadDataExchange = null;
         }
 
 
@@ -457,6 +434,7 @@ namespace ARAUniSimSIMBridge
 
         public void ResetMappingList()
         {
+            this.IsApplyMapping = false; // reset
             this.MappingList.Clear();
             this.SetMappingTable();
         }
@@ -493,7 +471,7 @@ namespace ARAUniSimSIMBridge
         /// <summary>
         /// 설정환경 불러오기.
         /// </summary>
-        private void LoadConfiguration()
+        public void LoadConfiguration()
         {
             //string doc = string.Format("{0}\\ARASIMBridge\\Config.xml", Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
 
@@ -523,6 +501,17 @@ namespace ARAUniSimSIMBridge
                         this.LoadMappingList(this.PathLeastmappingXML);
                     }
 
+
+                    this.txtLocalServerSelected.Value = cf.OPCServerName;
+                    if (cf.OPCServerName.StartsWith("SPT."))
+                    {
+                        this.dblOPCServerSelected.SetValue(20);
+                    }
+                    else
+                    {
+                        this.dblOPCServerSelected.SetValue(22);
+                    }
+
                     this.dblRealTimeFactor.Value = cf.Foctor;
                     this.preRealTimeFactor = cf.Foctor;
 
@@ -538,104 +527,92 @@ namespace ARAUniSimSIMBridge
         public string OPCServerName { get; set; }
         private void GetModelINfoFromGenkey(string path)
         {
-            try
+
+            this.OPCServerName = "OLGAOPCServer";
+            this.OLGAModelName = "ServerDemo";
+
+            FileStream fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
+            StreamReader reader = new StreamReader(fs);
+
+
+            StringBuilder strb = new StringBuilder();
+            string strLine;
+            bool check = false;
+            while ((strLine = reader.ReadLine()) != null)
             {
-                this.OLGAModelName = string.Empty;
+                if (Regex.IsMatch(strLine, "! .*"))
+                {
+                    if (strLine.Equals("! Global keywords", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        check = true;
+                        continue;
+                    }
+                    else
+                    {
+                        check = false;
+                    }
+                }
+
+                if (check)
+                {
+                    if (strLine.StartsWith("        "))
+                    {
+                        //이어붙기
+                        strb.Append(strLine);
+                    }
+                    else
+                    {
+                        strb.AppendFormat("!@#{0}", strLine);
+                    }
+                }
+            }
+            fs.Close();
+            reader.Close();
+
+
+            string data = strb.ToString();
+            data = Regex.Replace(data, "\\\\        ", "");
+
+            string[] datas = Regex.Split(data, "!@#");
+            for (int maini = 0; maini < datas.Length; maini++)
+            {
+                string line = datas[maini];
+
+                if (line.StartsWith("SERVEROPTIONS"))
+                {
+                    string[] strarr = line.Split(',');
+                    for (int i = 0; i < strarr.Length; i++)
+                    {
+
+                        if (strarr[i].Contains("SERVERNAME"))
+                        {
+                            string[] svrdata = strarr[i].Split('=');
+                            if (svrdata.Length > 0)
+                                this.OPCServerName = svrdata[1].Trim();
+                        }
+
+                        if (strarr[i].Contains("MODELNAME"))
+                        {
+                            string[] svrdata = strarr[i].Split('=');
+                            if (svrdata.Length > 0)
+                                this.OLGAModelName = svrdata[1].Trim();
+                        }
+                    }
+                    break;
+                }
+            }
+
+            this.OPCServerName = "SPT." + this.OPCServerName;
+
+            //CommonController.Instance.PrintLog(this.OPCServerName);
+            if (CommonController.Instance.CheckDuplicatedOLGAOPCServer(this))
+            {
+                CommonController.Instance.PrintLog(string.Format("OLGA OPC Server {0} is duplicated", this.OPCServerName));
                 this.OPCServerName = string.Empty;
-                string tempOPCServerName = "OLGAOPCServer";
-                string tempOLGAModelName = "ServerDemo";
-
-                FileStream fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
-                StreamReader reader = new StreamReader(fs);
-
-
-                StringBuilder strb = new StringBuilder();
-                string strLine;
-                bool check = false;
-                while ((strLine = reader.ReadLine()) != null)
-                {
-                    if (Regex.IsMatch(strLine, "! .*"))
-                    {
-                        if (strLine.Equals("! Global keywords", StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            check = true;
-                            continue;
-                        }
-                        else
-                        {
-                            check = false;
-                        }
-                    }
-
-                    if (check)
-                    {
-                        if (strLine.StartsWith("        "))
-                        {
-                            //이어붙기
-                            strb.Append(strLine);
-                        }
-                        else
-                        {
-                            strb.AppendFormat("!@#{0}", strLine);
-                        }
-                    }
-                }
-                fs.Close();
-                reader.Close();
-
-
-                string data = strb.ToString();
-                data = Regex.Replace(data, "\\\\        ", "");
-
-                string[] datas = Regex.Split(data, "!@#");
-                for (int maini = 0; maini < datas.Length; maini++)
-                {
-                    string line = datas[maini];
-
-                    if (line.StartsWith("SERVEROPTIONS"))
-                    {
-                        string[] strarr = line.Split(',');
-                        for (int i = 0; i < strarr.Length; i++)
-                        {
-
-                            if (strarr[i].Contains("SERVERNAME"))
-                            {
-                                string[] svrdata = strarr[i].Split('=');
-                                if (svrdata.Length > 0)
-                                    tempOPCServerName = svrdata[1].Trim();
-                            }
-
-                            if (strarr[i].Contains("MODELNAME"))
-                            {
-                                string[] svrdata = strarr[i].Split('=');
-                                if (svrdata.Length > 0)
-                                    tempOLGAModelName = svrdata[1].Trim();
-                            }
-                        }
-                        break;
-                    }
-                }
-
-
-                this.OLGAModelName = tempOLGAModelName;
-                this.OPCServerName = string.Format("SPT.{0}", tempOPCServerName);
-
-
-                //CommonController.Instance.PrintLog(this.OPCServerName);
-                if (CommonController.Instance.CheckDuplicatedOLGAOPCServer(this))
-                {
-                    CommonController.Instance.PrintLog(string.Format("OLGA OPC Server {0} is duplicated", this.OPCServerName));
-                    this.OPCServerName = string.Empty;
-                    this.OLGAModelName = string.Empty;
-                    this.txtOLGAModel.Value = string.Empty;
-                }
-
+                this.OLGAModelName = string.Empty;
+                this.txtOLGAModel.Value = string.Empty;
             }
-            catch (Exception ex)
-            {
-                CommonController.Instance.PrintLog(ex.StackTrace);
-            }
-            //CommonController.Instance.PrintLog(string.Format("GetModelINfoFromGenkey : {0}, {1}", this.OLGAModelName, this.OPCServerName));
+
         }
 
 
@@ -651,6 +628,11 @@ namespace ARAUniSimSIMBridge
                 OPCServerName = this.OPCServerName,
             };
 
+            if (this.OPCServerName.StartsWith("SPT.") == false)
+            {
+                cf.PathOLGAGenkey = string.Empty;
+                cf.PathOLGASnapshot = string.Empty;
+            }
 
             //string doc = string.Format("{0}\\ARASIMBridge\\Config.xml", Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
 
@@ -682,39 +664,32 @@ namespace ARAUniSimSIMBridge
             serverNames = serverNames.Distinct().ToList();
             serverNames.Sort();
 
-            try
+
+            for (int i = 0; i < serverNames.Count; i++)
             {
-                //if (CommonController.Instance.ControllerIndex(this) == 0)
-                //   CommonController.Instance.DisconnectNotusingServer();
+                CommonController.Instance.ConnectOPCServer(serverNames[i], this);
+            }
 
-                for (int i = 0; i < serverNames.Count; i++)
-                {
-                    CommonController.Instance.ConnectOPCServer(serverNames[i], this);
-                }
-
-                //태그들이 올바른지 체크하기.
-                if (CommonController.Instance.CheckMappingOPC(serverNames, this.MappingList) == false ||
-                    CommonController.Instance.CheckMappingOTS(serverNames, this.MappingList) == false)
+            //태그들이 올바른지 체크하기.
+            if (CommonController.Instance.CheckMappingOPC(serverNames, this.MappingList) == false ||
+                CommonController.Instance.CheckMappingOTS(serverNames, this.MappingList) == false)
+            {
+                noError = false;
+                this.IsApplyMapping = false; //has error
+            }
+            else
+            {
+                if (CommonController.Instance.AddMappingOPCOTS(serverNames, this.MappingList, this) == false)
                 {
                     noError = false;
-                    this.IsApplyMapping = false; //has error
+                    this.IsApplyMapping = false; //ApplyMappingTable
                 }
                 else
                 {
-                    if (CommonController.Instance.AddMappingOPCOTS(serverNames, this.MappingList, this) == false)
-                    {
-                        noError = false;
-                        this.IsApplyMapping = true; //ApplyMappingTable
-                    }
+                    noError = true;
+                    this.IsApplyMapping = true;
                 }
             }
-            catch (Exception ex)
-            {
-                CommonController.Instance.PrintLog(ex.StackTrace);
-                noError = false;
-                this.IsApplyMapping = false; // has error
-            }
-
 
             return noError;
         }
@@ -805,17 +780,17 @@ namespace ARAUniSimSIMBridge
                 this.txtOLGAModel.Value = ofd.FileName;
                 this.txtOLGASnapshot.Value = string.Empty;
 
-                this.GetModelINfoFromGenkey(ofd.FileName);
+                this.GetModelINfoFromGenkey(ofd.FileName); //load model
             }
         }
 
 
 
+        public double PreType = -99;
         public bool ConnectOPCServer()
         {
             bool result = false;
             //CommonController.Instance.PrintLog(this.dblOPCServerSelected.Value + ", " + this.txtLocalServerSelected.Value);
-
             //CommonController.Instance.solver.CanSolve = false;
             //CommonController.Instance.integrator.Mode = UniSimDesign.IntegratorMode_enum.imManual;
 
@@ -828,6 +803,14 @@ namespace ARAUniSimSIMBridge
             {
                 result = this.connectOPCOther();
             }
+
+            if (PreType != type)
+            {
+                PreType = type;
+                this.IsApplyMapping = false; // 재연결
+            }
+
+
             return result;
         }
 
@@ -889,13 +872,15 @@ namespace ARAUniSimSIMBridge
             }
 
 
-            if (File.Exists(this.txtOLGAModel.Value)) this.GetModelINfoFromGenkey(this.txtOLGAModel.Value);
+            if (this.IsApplyMapping == false && File.Exists(this.txtOLGAModel.Value))
+            {
+                this.GetModelINfoFromGenkey(this.txtOLGAModel.Value);
+            }
 
 
 
             //현재 서버리스트 지우기
             CommonController.Instance.RemoveOPCServers(this); //execute에서 먼저 지우고 시작.
-
 
 
             if (this.ExecuteOLGA() == false) return false;
@@ -915,7 +900,7 @@ namespace ARAUniSimSIMBridge
 
 
             //olga opc 접속
-            //if (this.ConnectOLGAOPC()) //처음실행
+
             if (CommonController.Instance.ConnectOPCServer(this.OPCServerName, this))
             {
                 if (loadSnapshot) this.LoadOLGASanpshot(this.txtOLGASnapshot.Value);
@@ -939,15 +924,11 @@ namespace ARAUniSimSIMBridge
             //현재 서버리스트 지우기
             CommonController.Instance.RemoveOPCServers(this); //shutdown
 
-            CommonController.Instance.ResetMapping();
-
-
-            this.KillMyOLGA(); 
+            this.KillMyOLGA();
             CommonController.Instance.GetOPCServerList();
 
             this.SetStatus(extensionStatus.Disconnected); //shutdown
             this.dblConnectedOPC.SetValue(0);
-
         }
 
 
@@ -995,7 +976,6 @@ namespace ARAUniSimSIMBridge
             process.Start();
             //string resultmsg = process.StandardOutput.ReadToEnd();
             //process.Close();*/
-
 
             return true;
         }
@@ -1098,51 +1078,43 @@ namespace ARAUniSimSIMBridge
 
         public bool PrepareStartSimulation()
         {
-            try
+
+            if (this.status != extensionStatus.Connected)
             {
-                if (this.status != extensionStatus.Connected)
-                {
-                    if (this.ConnectOPCServer() == false)
-                        return false;
-                }
-
-                if (this.IsApplyMapping == false)
-                {
-                    this.ApplyMappingTable();
-                }
-
-
-
-                this.RunInterval = (int)this.dblOLGARunInterval.Value;
-
-                BackDoor bd = (UniSimDesign.BackDoor)CommonController.Instance.integrator;
-                this.CalcRealtimeFactor(((RealVariable)bd.get_BackDoorVariable(":ExtraData.107").Variable).Value);
-
-                this.myOPCServers = CommonController.Instance.GetOPCServers(this);
-                this.myReadDTs = CommonController.Instance.GetOTSReadDatatables(this);
-                this.myWriteDTs = CommonController.Instance.GetOTSWriteDatatables(this);
-                this.ElapsedTimes.Clear();
-                this.AccessTimes.Clear();
-                this.GapTimes.Clear();
-
-                this.TotalExecuteSteps = 0;
-                this.preTime = DateTime.Now;
-                this.curTime = DateTime.Now;
-
-                this.UpdateTImes(true);
-
-
-                this.doEventsOPCToOTS = new ManualResetEvent[myOPCServers.Count];
-                this.doEventsOTSToOPC = new ManualResetEvent[myReadDTs.Count];
-                for (int maini = 0; maini < myOPCServers.Count; maini++) doEventsOPCToOTS[maini] = new ManualResetEvent(true);
-                for (int maini = 0; maini < myReadDTs.Count; maini++) doEventsOTSToOPC[maini] = new ManualResetEvent(true);
-
+                if (this.ConnectOPCServer() == false)
+                    return false;
             }
-            catch (Exception ex)
+
+            if (this.IsApplyMapping == false)
             {
-                CommonController.Instance.PrintLog(ex.StackTrace);
-                return false;
+                this.ApplyMappingTable();
             }
+
+            this.RunInterval = (int)this.dblOLGARunInterval.Value;
+
+            BackDoor bd = (UniSimDesign.BackDoor)CommonController.Instance.integrator;
+            this.CalcRealtimeFactor(((RealVariable)bd.get_BackDoorVariable(":ExtraData.107").Variable).Value);
+
+            this.myOPCServers = CommonController.Instance.GetOPCServers(this);
+            this.myReadDTs = CommonController.Instance.GetOTSReadDatatables(this);
+            this.myWriteDTs = CommonController.Instance.GetOTSWriteDatatables(this);
+            this.ElapsedTimes.Clear();
+            this.AccessTimes.Clear();
+            this.GapTimes.Clear();
+
+            this.TotalExecuteSteps = 0;
+            this.preTime = DateTime.Now;
+            this.curTime = DateTime.Now;
+
+            this.UpdateTImes(true);
+
+
+            this.doEventsOPCToOTS = new ManualResetEvent[myOPCServers.Count];
+            this.doEventsOTSToOPC = new ManualResetEvent[myReadDTs.Count];
+            for (int maini = 0; maini < myOPCServers.Count; maini++) doEventsOPCToOTS[maini] = new ManualResetEvent(true);
+            for (int maini = 0; maini < myReadDTs.Count; maini++) doEventsOTSToOPC[maini] = new ManualResetEvent(true);
+
+
 
             return true;
         }
@@ -1167,16 +1139,7 @@ namespace ARAUniSimSIMBridge
         public bool StopSimulation()
         {
             bool haserror = false;
-            try
-            {
-                //CommonController.Instance.PrintLog("StopSimulation"); 
-                this.IsStartDataExchange = false; //stop 
-            }
-            catch (Exception ex)
-            {
-                CommonController.Instance.PrintLog(ex.StackTrace);
-                haserror = true;
-            }
+            this.IsStartDataExchange = false; //stop 
             return haserror;
         }
 
@@ -1242,7 +1205,7 @@ namespace ARAUniSimSIMBridge
 
                 }
             }
-            catch (Exception ex)
+            catch 
             {
                 //CommonController.Instance.PrintLog(ex.StackTrace);
             }
@@ -1292,8 +1255,6 @@ namespace ARAUniSimSIMBridge
                    CommonController.Instance.GetControllerIndex(this), cycleElapsed.TotalMilliseconds);
 
 
-
-
                 //ots time
                 this.OTSEndtime = CommonController.Instance.integrator.CurrentTime.Value;
                 double otselapsed = this.OTSEndtime - this.OTSStartTime;
@@ -1336,10 +1297,6 @@ namespace ARAUniSimSIMBridge
 
             return string.Format("{0:D2}:{1:D2}:{2:D2}", hour, min, sec);
         }
-
-
-
-
 
         public List<float> ElapsedTimes = new List<float>();
         public List<int> AccessTimes = new List<int>();
@@ -1385,7 +1342,6 @@ namespace ARAUniSimSIMBridge
             this.accessTime = (int)(this.StepSize * this.dblOLGARunInterval.Value / this.dblRealTimeFactor.Value);
             this.baseAccessTime = this.accessTime;
         }
-
 
 
         private DateTime extime;
@@ -1489,45 +1445,37 @@ namespace ARAUniSimSIMBridge
         {
             ManualResetEvent doevent = (ManualResetEvent)obj;
 
-            try
+            OTSDataTable selfRead = null;
+            for (int i = 0; i < this.myReadDTs.Count; i++)
             {
-
-                OTSDataTable selfRead = null;
-                for (int i = 0; i < this.myReadDTs.Count; i++)
+                if (this.myReadDTs[i].Type == 2)
                 {
-                    if (this.myReadDTs[i].Type == 2)
-                    {
-                        selfRead = this.myReadDTs[i];
-                        break;
-                    }
+                    selfRead = this.myReadDTs[i];
+                    break;
                 }
-
-                OTSDataTable selfWrite = null;
-                for (int i = 0; i < this.myWriteDTs.Count; i++)
-                {
-                    if (this.myWriteDTs[i].Type == 2)
-                    {
-                        selfWrite = this.myWriteDTs[i];
-                        break;
-                    }
-                }
-
-                if (selfRead != null && selfWrite != null)
-                {
-                    selfRead.TagValues = (double[])selfRead.DataTable.GetAllValues(false);
-                    selfWrite.TagValues = selfRead.TagValues;
-                    selfWrite.DataTable.SetAllValues(selfWrite.TagValues);
-                }
-                else
-                {
-                    //CommonController.Instance.PrintLog("self not ");
-                }
-
             }
-            catch (Exception ex)
+
+            OTSDataTable selfWrite = null;
+            for (int i = 0; i < this.myWriteDTs.Count; i++)
             {
-                CommonController.Instance.PrintLog(ex.StackTrace);
+                if (this.myWriteDTs[i].Type == 2)
+                {
+                    selfWrite = this.myWriteDTs[i];
+                    break;
+                }
             }
+
+            if (selfRead != null && selfWrite != null)
+            {
+                selfRead.TagValues = (double[])selfRead.DataTable.GetAllValues(false);
+                selfWrite.TagValues = selfRead.TagValues;
+                selfWrite.DataTable.SetAllValues(selfWrite.TagValues);
+            }
+            else
+            {
+                //CommonController.Instance.PrintLog("self not ");
+            }
+
 
             doevent.Set();
         }
@@ -1550,53 +1498,47 @@ namespace ARAUniSimSIMBridge
 
         private void DataExchangeOTSProc(object obj)
         {
-
             List<object> args = (List<object>)obj;
             OTSDataTable odt = (OTSDataTable)args[0];
             ManualResetEvent doevent = (ManualResetEvent)args[1];
 
-            try
+
+            if (odt.Type == 1)
             {
-                if (odt.Type == 1)
+                for (int subi = 0; subi < this.myOPCServers.Count; subi++)
                 {
-                    for (int subi = 0; subi < this.myOPCServers.Count; subi++)
+                    OPCServer opcSvr = this.myOPCServers[subi];
+                    if (odt.ConnectedServerName == opcSvr.Name)
                     {
-                        OPCServer opcSvr = this.myOPCServers[subi];
-                        if (odt.ConnectedServerName == opcSvr.Name)
+                        for (int subsubi = 0; subsubi < opcSvr.WriteSubscriptions.Count; subsubi++)
                         {
-                            for (int subsubi = 0; subsubi < opcSvr.WriteSubscriptions.Count; subsubi++)
+                            OPCSubscription wos = opcSvr.WriteSubscriptions[subsubi];
+                            if (wos.Name == odt.ConnectedSubscriptionName)
                             {
-                                OPCSubscription wos = opcSvr.WriteSubscriptions[subsubi];
-                                if (wos.Name == odt.ConnectedSubscriptionName)
+                                odt.TagValues = odt.DataTable.GetAllValues() as double[];
+
+                                if (wos.ItemValues == null || wos.ItemValues.Length != odt.TagValues.Length)
+                                    wos.ItemValues = new ItemValueResult[odt.TagValues.Length];
+
+                                List<Opc.Da.ItemValue> values = new List<ItemValue>();
+                                for (int i = 0; i < odt.TagValues.Length; i++)
                                 {
-                                    odt.TagValues = odt.DataTable.GetAllValues() as double[];
+                                    Opc.Da.Item item = wos.Subscription.Items[i];
+                                    System.Type wt = wos.ItemTypes[i];
+                                    object ConvertedValue = this.ConvertOTSToOPC(odt.TagValues[i], wt);
 
-                                    if (wos.ItemValues == null || wos.ItemValues.Length != odt.TagValues.Length)
-                                        wos.ItemValues = new ItemValueResult[odt.TagValues.Length];
-
-                                    List<Opc.Da.ItemValue> values = new List<ItemValue>();
-                                    for (int i = 0; i < odt.TagValues.Length; i++)
-                                    {
-                                        Opc.Da.Item item = wos.Subscription.Items[i];
-                                        System.Type wt = wos.ItemTypes[i];
-                                        object ConvertedValue = this.ConvertOTSToOPC(odt.TagValues[i], wt);
-
-                                        values.Add(new ItemValue(item) { Value = ConvertedValue });
-                                        wos.ItemValues[i] = new ItemValueResult(item) { Value = ConvertedValue };
-                                    }
-
-                                    wos.Subscription.Write(values.ToArray());
-                                    break;
+                                    values.Add(new ItemValue(item) { Value = ConvertedValue });
+                                    wos.ItemValues[i] = new ItemValueResult(item) { Value = ConvertedValue };
                                 }
+
+                                wos.Subscription.Write(values.ToArray());
+                                break;
                             }
-                        }// end if
-                    }
+                        }
+                    }// end if
                 }
             }
-            catch (Exception ex)
-            {
-                CommonController.Instance.PrintLog(ex.StackTrace);
-            }
+
             doevent.Set();
         }
 
@@ -1624,94 +1566,89 @@ namespace ARAUniSimSIMBridge
             opcSvr.SelfDataExchange();
 
 
-            for (int subi = 0; subi < opcSvr.ReadSubscriptions.Count; subi++)
+            try
             {
-                OPCSubscription opcSub = opcSvr.ReadSubscriptions[subi];
-
-                ////////////////////////////ots
-                if (opcSub.Type == 2) continue;
-                else if (opcSub.Type == 0)
+                if (opcSvr.Server.IsConnected)
                 {
-                    opcSub.ItemValues = opcSub.Subscription.Read(opcSub.Subscription.Items);
 
-                    //ots write
-                    if (opcSub.ItemValues.Length > 0)
+                    for (int subi = 0; subi < opcSvr.ReadSubscriptions.Count; subi++)
                     {
-                        OTSDataTable odt = CommonController.Instance.OTSWriteDataTableList[opcSub.ConnectedDataTableIndex];
-                        try
+                        OPCSubscription opcSub = opcSvr.ReadSubscriptions[subi];
+
+
+                        ////////////////////////////ots
+                        if (opcSub.Type == 2) continue;
+                        else if (opcSub.Type == 0)
                         {
-                            if (odt.TagValues == null)
-                                odt.TagValues = new double[odt.DataTable.VarDefinitions.Count];
+                            opcSub.ItemValues = opcSub.Subscription.Read(opcSub.Subscription.Items);
 
-                            for (int j = 0; j < opcSub.ItemValues.Length; j++)
+                            //ots write
+                            if (opcSub.ItemValues.Length > 0)
                             {
-                                System.Type rt = opcSub.ItemTypes[j];
-                                double FromValue = this.ConvertOPCToOTS(opcSub.ItemValues[j]);
-                                odt.TagValues[j] = FromValue;
-                            }
-                            odt.DataTable.SetAllValues(odt.TagValues);
+                                OTSDataTable odt = CommonController.Instance.OTSWriteDataTableList[opcSub.ConnectedDataTableIndex];
 
-                        }
-                        catch (Exception ex)
-                        {
-                            CommonController.Instance.PrintLog(ex.StackTrace);
-                            CommonController.Instance.PrintLog(opcSvr.Name + ", " + opcSub.Name + ", " + odt.DataTable.name);
+                                if (odt.TagValues == null)
+                                    odt.TagValues = new double[odt.DataTable.VarDefinitions.Count];
 
-                            CommonController.Instance.PrintLog(odt.DataTable.VarDefinitions.Count + ", " + opcSub.ItemValues.Length);
-
-                            for (int i = 0; i < odt.TagValues.Length; i++)
-                            {
-                                CommonController.Instance.PrintLog(odt.TagValues[i]);
-                            }
-                        }
-                    }
-                }
-                /////////////////////////////////// opc
-                else if (opcSub.Type == 1)
-                {
-                    for (int subsubi = 0; subsubi < this.myOPCServers.Count; subsubi++)
-                    {
-                        OPCServer subOpcSvr = this.myOPCServers[subsubi];
-
-                        if (subOpcSvr.Name == opcSub.ConnectedServerName)
-                        {
-                            for (int j = 0; j < subOpcSvr.WriteSubscriptions.Count; j++)
-                            {
-                                OPCSubscription wos = subOpcSvr.WriteSubscriptions[j];
-                                if (wos.Name == opcSub.ConnectedSubscriptionName)
+                                for (int j = 0; j < opcSub.ItemValues.Length; j++)
                                 {
-                                    opcSub.ItemValues = opcSub.Subscription.Read(opcSub.Subscription.Items);
-                                    List<Opc.Da.ItemValue> values = new List<ItemValue>();
+                                    System.Type rt = opcSub.ItemTypes[j];
+                                    double FromValue = this.ConvertOPCToOTS(opcSub.ItemValues[j]);
+                                    odt.TagValues[j] = FromValue;
+                                }
+                                odt.DataTable.SetAllValues(odt.TagValues);
+                            }
+                        }
+                        /////////////////////////////////// opc
+                        else if (opcSub.Type == 1)
+                        {
+                            for (int subsubi = 0; subsubi < this.myOPCServers.Count; subsubi++)
+                            {
+                                OPCServer subOpcSvr = this.myOPCServers[subsubi];
 
-                                    for (int i = 0; i < opcSub.ItemValues.Length; i++)
+                                if (subOpcSvr.Name == opcSub.ConnectedServerName)
+                                {
+                                    for (int j = 0; j < subOpcSvr.WriteSubscriptions.Count; j++)
                                     {
-                                        Opc.Da.Item item = wos.Subscription.Items[i];
-                                        Opc.Da.ItemValueResult ivr = opcSub.ItemValues[i];
-
-                                        System.Type wt = wos.ItemTypes[i];
-                                        System.Type rt = opcSub.ItemTypes[i];
-
-                                        object value = ivr.Value;
-                                        if (wt != rt)
+                                        OPCSubscription wos = subOpcSvr.WriteSubscriptions[j];
+                                        if (wos.Name == opcSub.ConnectedSubscriptionName)
                                         {
-                                            value = System.Convert.ChangeType(ivr.Value, wt);
-                                        }
-                                        values.Add(new ItemValue(item) { Value = value });
-                                    }
-                                    wos.ItemValues = opcSub.ItemValues;
-                                    wos.Subscription.Write(values.ToArray());
+                                            opcSub.ItemValues = opcSub.Subscription.Read(opcSub.Subscription.Items);
+                                            List<Opc.Da.ItemValue> values = new List<ItemValue>();
 
+                                            for (int i = 0; i < opcSub.ItemValues.Length; i++)
+                                            {
+                                                Opc.Da.Item item = wos.Subscription.Items[i];
+                                                Opc.Da.ItemValueResult ivr = opcSub.ItemValues[i];
+
+                                                System.Type wt = wos.ItemTypes[i];
+                                                System.Type rt = opcSub.ItemTypes[i];
+
+                                                object value = ivr.Value;
+                                                if (wt != rt)
+                                                {
+                                                    value = System.Convert.ChangeType(ivr.Value, wt);
+                                                }
+                                                values.Add(new ItemValue(item) { Value = value });
+                                            }
+                                            wos.ItemValues = opcSub.ItemValues;
+                                            wos.Subscription.Write(values.ToArray());
+
+                                            break;
+                                        }
+                                    }
                                     break;
                                 }
                             }
-                            break;
                         }
                     }
                 }
+            }
+            catch
+            {
 
             }
             doevent.Set();
-
         }
 
         private void DataExchangeStep(object obj)

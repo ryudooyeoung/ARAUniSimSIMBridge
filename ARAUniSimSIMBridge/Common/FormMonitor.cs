@@ -220,145 +220,151 @@ namespace ARAUniSimSIMBridge
 
             if (this.elapsedTimes.Count <= 2) return;
 
-            List<float> mdata = this.elapsedTimes;
-
-            float mxmax = mdata.Count;
-            float mxmin = 0;
-            float mxdistance = (drawarea.Width - 10) / (mxmax - mxmin);
-
-            float mymax = mdata.Max();
-            float mymin = mdata.Min();
-            //float mymax = 600, mymin = 0;
-            float mydistance = (hh - 10) / (mymax - mymin);
-
-            using (Pen temp = new Pen(Color.WhiteSmoke, 1))
+            try
             {
-                using (GraphicsPath path = new GraphicsPath())
+                List<float> mdata = this.elapsedTimes;
+
+
+                float mxmax = mdata.Count;
+                float mxmin = 0;
+                float mxdistance = (drawarea.Width - 10) / (mxmax - mxmin);
+
+                float mymax = mdata.Max();
+                float mymin = mdata.Min();
+                //float mymax = 600, mymin = 0;
+                float mydistance = (hh - 10) / (mymax - mymin);
+
+                using (Pen temp = new Pen(Color.WhiteSmoke, 1))
                 {
-                    PointF[] points = new PointF[mdata.Count];
-                    for (int i = 0; i < mdata.Count; i++)
+                    using (GraphicsPath path = new GraphicsPath())
                     {
-                        float x = (i * mxdistance) - (mxmin * mxdistance) + 5;
-                        float y = 0 + (hh - (mdata[i] - mymin) * mydistance) - 5;
-                        points[i] = new PointF(x, y);
+                        PointF[] points = new PointF[mdata.Count];
+                        for (int i = 0; i < mdata.Count; i++)
+                        {
+                            float x = (i * mxdistance) - (mxmin * mxdistance) + 5;
+                            float y = 0 + (hh - (mdata[i] - mymin) * mydistance) - 5;
+                            points[i] = new PointF(x, y);
+                        }
+                        path.AddLines(points);
+                        g.DrawPath(temp, path);
+
+                        using (StringFormat strf = new StringFormat())
+                        {
+                            strf.LineAlignment = StringAlignment.Far;
+                            strf.Alignment = StringAlignment.Far;
+                            g.DrawString(string.Format("execute elapsed {0:0}", mdata[mdata.Count - 1]), tooltipFont, Brushes.Black, this.panelMonitor.Width, hh - 13, strf);
+
+                            strf.LineAlignment = StringAlignment.Near;
+                            strf.Alignment = StringAlignment.Near;
+                            g.DrawString(string.Format("{0}", (long)mymax), tooltipFont, Brushes.White, 0, 5, strf);
+
+                            strf.LineAlignment = StringAlignment.Far;
+                            strf.Alignment = StringAlignment.Near;
+                            g.DrawString(string.Format("{0}", (long)mymin), tooltipFont, Brushes.White, 0, hh - 5, strf);
+                        }
                     }
-                    path.AddLines(points);
-                    g.DrawPath(temp, path);
+                }
 
-                    using (StringFormat strf = new StringFormat())
+
+                List<int> tdata = this.accessTimes;
+
+                float txmax = tdata.Count;
+                float txmin = 0;
+                float txdistance = (drawarea.Width - 10) / (txmax - txmin);
+
+                float tymax = tdata.Max();
+                float tymin = tdata.Min();
+                //float tymax = 600, tymin = 0;
+                if (tymax == tymin)
+                {
+                    tymax++;
+                    tymin--;
+                }
+                float tydistance = (hh - 10) / (tymax - tymin);
+
+                using (Pen temp = new Pen(Color.Pink, 1))
+                {
+                    using (GraphicsPath path = new GraphicsPath())
                     {
-                        strf.LineAlignment = StringAlignment.Far;
-                        strf.Alignment = StringAlignment.Far;
-                        g.DrawString(string.Format("execute elapsed {0:0}", mdata[mdata.Count - 1]), tooltipFont, Brushes.Black, this.panelMonitor.Width, hh - 13, strf);
+                        PointF[] points = new PointF[tdata.Count];
+                        for (int i = 0; i < tdata.Count; i++)
+                        {
+                            float x = (i * txdistance) - (txmin * txdistance) + 5;
+                            float y = hh + (hh - (tdata[i] - tymin) * tydistance) - 5;
+                            points[i] = new PointF(x, y);
+                        }
+                        path.AddLines(points);
+                        g.DrawPath(temp, path);
 
-                        strf.LineAlignment = StringAlignment.Near;
-                        strf.Alignment = StringAlignment.Near;
-                        g.DrawString(string.Format("{0}", (long)mymax), tooltipFont, Brushes.White, 0, 5, strf);
+                        using (StringFormat strf = new StringFormat())
+                        {
+                            strf.LineAlignment = StringAlignment.Far;
+                            strf.Alignment = StringAlignment.Far;
+                            g.DrawString(string.Format("{0}", tdata[tdata.Count - 1]), tooltipFont, Brushes.Black, this.panelMonitor.Width, hh + hh - 13, strf);
 
-                        strf.LineAlignment = StringAlignment.Far;
-                        strf.Alignment = StringAlignment.Near;
-                        g.DrawString(string.Format("{0}", (long)mymin), tooltipFont, Brushes.White, 0, hh - 5, strf);
+                            strf.LineAlignment = StringAlignment.Near;
+                            strf.Alignment = StringAlignment.Near;
+                            g.DrawString(string.Format("{0}", (long)tymax), tooltipFont, Brushes.Pink, 0, hh + 5, strf);
+
+                            strf.LineAlignment = StringAlignment.Far;
+                            strf.Alignment = StringAlignment.Near;
+                            g.DrawString(string.Format("{0}", (long)tymin), tooltipFont, Brushes.Pink, 0, hh + hh - 5, strf);
+                        }
+                    }
+                }
+
+
+
+                List<float> cdata = this.gapTimes;
+
+                float cxmax = cdata.Count;
+                float cxmin = 0;
+                float cxdistance = (drawarea.Width - 10) / (cxmax - cxmin);
+
+                float cymax = cdata.Max();
+                float cymin = cdata.Min();
+                //float cymax = 600, cymin = 0;
+                if (cymax == cymin)
+                {
+                    cymax++;
+                    cymin--;
+                }
+                float cydistance = (hh - 10) / (cymax - cymin);
+
+                using (Pen temp = new Pen(Color.Gold, 1))
+                {
+                    using (GraphicsPath path = new GraphicsPath())
+                    {
+                        PointF[] points = new PointF[cdata.Count];
+                        for (int i = 0; i < cdata.Count; i++)
+                        {
+                            float x = (i * cxdistance) - (cxmin * cxdistance) + 5;
+                            float y = hh + hh + (hh - (cdata[i] - cymin) * cydistance) - 5;
+                            points[i] = new PointF(x, y);
+                        }
+                        path.AddLines(points);
+                        g.DrawPath(temp, path);
+
+                        using (StringFormat strf = new StringFormat())
+                        {
+                            strf.LineAlignment = StringAlignment.Far;
+                            strf.Alignment = StringAlignment.Far;
+                            g.DrawString(string.Format("1cycle elapsed {0}", cdata[cdata.Count - 1]), tooltipFont, Brushes.Black, this.panelMonitor.Width, hh + hh + hh - 13, strf);
+
+                            strf.LineAlignment = StringAlignment.Near;
+                            strf.Alignment = StringAlignment.Near;
+                            g.DrawString(string.Format("{0}", (long)cymax), tooltipFont, Brushes.Gold, 0, hh + hh + 5, strf);
+
+                            strf.LineAlignment = StringAlignment.Far;
+                            strf.Alignment = StringAlignment.Near;
+                            g.DrawString(string.Format("{0}", (long)cymin), tooltipFont, Brushes.Gold, 0, hh + hh + hh - 5, strf);
+                        }
                     }
                 }
             }
-
-
-            List<int> tdata = this.accessTimes;
-
-            float txmax = tdata.Count;
-            float txmin = 0;
-            float txdistance = (drawarea.Width - 10) / (txmax - txmin);
-
-            float tymax = tdata.Max();
-            float tymin = tdata.Min();
-            //float tymax = 600, tymin = 0;
-            if (tymax == tymin)
+            catch (Exception ex)
             {
-                tymax++;
-                tymin--;
             }
-            float tydistance = (hh - 10) / (tymax - tymin);
-
-            using (Pen temp = new Pen(Color.Pink, 1))
-            {
-                using (GraphicsPath path = new GraphicsPath())
-                {
-                    PointF[] points = new PointF[tdata.Count];
-                    for (int i = 0; i < tdata.Count; i++)
-                    {
-                        float x = (i * txdistance) - (txmin * txdistance) + 5;
-                        float y = hh + (hh - (tdata[i] - tymin) * tydistance) - 5;
-                        points[i] = new PointF(x, y);
-                    }
-                    path.AddLines(points);
-                    g.DrawPath(temp, path);
-
-                    using (StringFormat strf = new StringFormat())
-                    {
-                        strf.LineAlignment = StringAlignment.Far;
-                        strf.Alignment = StringAlignment.Far;
-                        g.DrawString(string.Format("{0}", tdata[tdata.Count - 1]), tooltipFont, Brushes.Black, this.panelMonitor.Width, hh + hh - 13, strf);
-
-                        strf.LineAlignment = StringAlignment.Near;
-                        strf.Alignment = StringAlignment.Near;
-                        g.DrawString(string.Format("{0}", (long)tymax), tooltipFont, Brushes.Pink, 0, hh + 5, strf);
-
-                        strf.LineAlignment = StringAlignment.Far;
-                        strf.Alignment = StringAlignment.Near;
-                        g.DrawString(string.Format("{0}", (long)tymin), tooltipFont, Brushes.Pink, 0, hh + hh - 5, strf);
-                    }
-                }
-            }
-
-
-
-            List<float> cdata = this.gapTimes;
-
-            float cxmax = cdata.Count;
-            float cxmin = 0;
-            float cxdistance = (drawarea.Width - 10) / (cxmax - cxmin);
-
-            float cymax = cdata.Max();
-            float cymin = cdata.Min();
-            //float cymax = 600, cymin = 0;
-            if (cymax == cymin)
-            {
-                cymax++;
-                cymin--;
-            }
-            float cydistance = (hh - 10) / (cymax - cymin);
-
-            using (Pen temp = new Pen(Color.Gold, 1))
-            {
-                using (GraphicsPath path = new GraphicsPath())
-                {
-                    PointF[] points = new PointF[cdata.Count];
-                    for (int i = 0; i < cdata.Count; i++)
-                    {
-                        float x = (i * cxdistance) - (cxmin * cxdistance) + 5;
-                        float y = hh + hh + (hh - (cdata[i] - cymin) * cydistance) - 5;
-                        points[i] = new PointF(x, y);
-                    }
-                    path.AddLines(points);
-                    g.DrawPath(temp, path);
-
-                    using (StringFormat strf = new StringFormat())
-                    {
-                        strf.LineAlignment = StringAlignment.Far;
-                        strf.Alignment = StringAlignment.Far;
-                        g.DrawString(string.Format("1cycle elapsed {0}", cdata[cdata.Count - 1]), tooltipFont, Brushes.Black, this.panelMonitor.Width, hh + hh + hh - 13, strf);
-
-                        strf.LineAlignment = StringAlignment.Near;
-                        strf.Alignment = StringAlignment.Near;
-                        g.DrawString(string.Format("{0}", (long)cymax), tooltipFont, Brushes.Gold, 0, hh + hh + 5, strf);
-
-                        strf.LineAlignment = StringAlignment.Far;
-                        strf.Alignment = StringAlignment.Near;
-                        g.DrawString(string.Format("{0}", (long)cymin), tooltipFont, Brushes.Gold, 0, hh + hh + hh - 5, strf);
-                    }
-                }
-            }
-
         }
 
         private void panelMonitor_MouseDown(object sender, MouseEventArgs e)

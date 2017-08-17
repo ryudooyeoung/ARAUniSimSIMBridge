@@ -242,9 +242,7 @@ namespace ARAUniSimSIMBridge
             this.txtUniSimTimes = (InternalTextFlexVariable)hyContainer.FindVariable("txtUniSimTimes").Variable;
             this.txtUniSimTimes.SetBounds(3);
             this.txtCPUClockTimes.SetBounds(3);
-
-
-
+             
             this.txtCreateDate = (InternalTextVariable)hyContainer.FindVariable("txtCreateDate").Variable;
             this.txtUniqueID = (InternalTextVariable)hyContainer.FindVariable("txtUniqueID").Variable;
 
@@ -257,9 +255,7 @@ namespace ARAUniSimSIMBridge
 
             this.txtOLGASnapshot = (InternalTextVariable)hyContainer.FindVariable("txtOLGASnapshot").Variable;
             this.txtOLGAModel = (InternalTextVariable)hyContainer.FindVariable("txtOLGAModel").Variable;
-
-
-
+             
             this.txtFromTypes = (InternalTextFlexVariable)hyContainer.FindVariable("txtFromTypes").Variable;
             this.txtFromNames = (InternalTextFlexVariable)hyContainer.FindVariable("txtFromNames").Variable;
             this.txtToTypes = (InternalTextFlexVariable)hyContainer.FindVariable("txtToTypes").Variable;
@@ -276,10 +272,11 @@ namespace ARAUniSimSIMBridge
 
             this.dblOLGARunInterval = (InternalRealVariable)hyContainer.FindVariable("dblOLGARunInterval").Variable;
             this.dblRealTimeFactor = (InternalRealVariable)hyContainer.FindVariable("dblRealTimeFactor").Variable;
-            this.SetStatus(extensionStatus.Disconnected); //초기설정
-
+         
             this.txtOLGAMessage = (InternalTextVariable)hyContainer.FindVariable("txtOLGAMessage").Variable;
 
+
+            this.SetStatus(extensionStatus.Disconnected); //초기설정
             CommonController.Instance.RegisterController(this);
             CommonController.Instance.SetContainer(hyContainer);
 
@@ -416,10 +413,16 @@ namespace ARAUniSimSIMBridge
             {
                 //새로 추가된 extension.
                 this.txtCreateDate.Value = DateTime.Now.ToString("yyyyMMddhhmmssff");//새로만들어짐
+
+                //기존에 있던 operation의 자료는 삭제한다.
+                CommonController.Instance.DeleteOldFiles(this.hyContainer.name);
             }
             else
             {
+                //이미 만들어진 id 
             }
+
+
 
             if (string.IsNullOrEmpty(this.txtUniqueID.Value))
             {

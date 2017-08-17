@@ -576,7 +576,7 @@ namespace ARAUniSimSIMBridge
                             pc.dblOLGARunInterval.SetValue(1);
                         }
                     }
-                     
+
                     // chek opc status
                     if (IsTerminated) break;
                     for (int i = 0; i < this.Controllers.Count; i++)
@@ -604,6 +604,7 @@ namespace ARAUniSimSIMBridge
                     }
 
 
+
                     // chek ots start
                     if (IsTerminated) break;
                     if (this.integrator.IsRunning) //시작했다면
@@ -618,7 +619,7 @@ namespace ARAUniSimSIMBridge
                     {
                         if (this.IsRunningOTS == true) // 시작이었다면.
                         {
-                            this.StopSimulation(); 
+                            this.StopSimulation();
                         }
                         this.IsRunningOTS = false; //중지 표시
                     }
@@ -629,7 +630,7 @@ namespace ARAUniSimSIMBridge
                     Thread.Sleep(10);
                 }
             }
-            catch  
+            catch
             {
                 // this.PrintLog(ex.StackTrace);
             }
@@ -717,7 +718,6 @@ namespace ARAUniSimSIMBridge
                         break;
                     }
                 }
-
                 //this.PrintLog(filename + ", " + exists);
                 if (exists == false)
                 {
@@ -743,6 +743,39 @@ namespace ARAUniSimSIMBridge
                 }
 
                 if (exists == false)
+                {
+                    File.Delete(path);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 기존에 있던 operation의 자료는 삭제한다.
+        /// </summary>
+        /// <param name="opName">찾을 operation 이름</param>
+        public void DeleteOldFiles(string opName)
+        {
+            string[] files = Directory.GetFiles(this.PathModelWorkDirectory);
+            for (int i = files.Length - 1; i >= 0; i--)
+            {
+                string path = files[i];
+
+                string filename = Path.GetFileNameWithoutExtension(path);
+
+                if (filename.Contains(opName))
+                {
+                    File.Delete(path);
+                }
+            }
+
+            //snapshot 에서 지우기
+            files = Directory.GetFiles(this.PathModelSnapshotDirectory);
+            for (int i = files.Length - 1; i >= 0; i--)
+            {
+                string path = files[i];
+                string filename = Path.GetFileNameWithoutExtension(path);
+
+                if (filename.Contains(opName))
                 {
                     File.Delete(path);
                 }

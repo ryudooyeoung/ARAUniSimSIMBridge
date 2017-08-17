@@ -23,9 +23,15 @@ namespace ARAUniSimSIMBridge
     [ClassInterface(ClassInterfaceType.AutoDispatch)]
     public class ARASIMBridge
     {
-        private ExtnUnitOperationContainer hyContainer;
+        /// <summary>
+        /// 기본 OTS Container
+        /// </summary>
+        private ExtnUnitOperationContainer hyContainer = null;
         private ExtnDynUnitOpContainer dynContainer = null;
 
+        /// <summary>
+        /// 
+        /// </summary>
         private PrivateController controller = null;
         private bool isLoaded = false;
 

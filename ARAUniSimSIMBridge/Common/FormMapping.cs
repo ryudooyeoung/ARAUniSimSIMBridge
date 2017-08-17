@@ -12,9 +12,19 @@ using System.IO;
 
 namespace ARAUniSimSIMBridge
 {
+    /// <summary>
+    /// mapping list 편집창
+    /// </summary>
     public partial class FormMapping : Form
     {
+        /// <summary>
+        /// 
+        /// </summary>
         private static FormMapping _instance = null;
+
+        /// <summary>
+        /// 싱글톤 instance
+        /// </summary>
         public static FormMapping Instance
         {
             get
@@ -27,7 +37,11 @@ namespace ARAUniSimSIMBridge
             }
         }
 
+        /// <summary>
+        /// singltone 방식이기에 dialogresult를 쓸수 없으므로 bool변수로 대체
+        /// </summary>
         public bool ResultOK { get; set; }
+
 
         private TreeModel treemodelOPC = null;
         private TreeModel treemodelTag = null;
@@ -36,74 +50,76 @@ namespace ARAUniSimSIMBridge
 
 
         private List<OPCServer> OPCServerList = null;
-        public System.Data.DataTable OTSTable = null;
-        public System.Data.DataTable OPCTable = null;
-        public List<MappingData> MappingList = null;
+        private System.Data.DataTable OTSTable = null;
+        private System.Data.DataTable OPCTable = null;
+        private List<MappingData> MappingList = null;
 
-        public List<string> opcLocalServers = null;
-
+        private List<string> opcLocalServers = null;
 
         private PrivateController CurrentController = null;
 
 
+        /// <summary>
+        /// 생성자
+        /// </summary>
         public FormMapping()
         {
             InitializeComponent();
         }
 
 
-
-        public bool isSet = false;
+        /// <summary>
+        /// mapping form 준비
+        /// </summary>
         public void SetBrowser()
         {
-            if (isSet == false)
-            {
-                this.flowsheet = CommonController.Instance.flowsheet;
-                this.OPCServerList = CommonController.Instance.OPCServerList;
-                this.treemodelOPC = CommonController.Instance.TreemodelOPC;
-                this.treemodelTag = CommonController.Instance.TreemodelTag;
 
-                treeViewAdvOPC.SuspendLayout();
-                this.treeViewAdvOPC.Model = CommonController.Instance.TreemodelOPC;
-                this.treeViewAdvOPC.ExpandAll();
-                treeViewAdvOPC.ResumeLayout();
+            this.flowsheet = CommonController.Instance.flowsheet;
+            this.OPCServerList = CommonController.Instance.OPCServerList;
+            this.treemodelOPC = CommonController.Instance.TreemodelOPC;
+            this.treemodelTag = CommonController.Instance.TreemodelTag;
 
-                treeViewAdvTag.SuspendLayout();
-                this.treeViewAdvTag.Model = CommonController.Instance.TreemodelTag;
-                this.treeViewAdvTag.ExpandAll();
-                treeViewAdvTag.ResumeLayout();
+            treeViewAdvOPC.SuspendLayout();
+            this.treeViewAdvOPC.Model = CommonController.Instance.TreemodelOPC;
+            this.treeViewAdvOPC.ExpandAll();
+            treeViewAdvOPC.ResumeLayout();
 
-
-                this.opcLocalServers = CommonController.Instance.OPCLocalServerNames;
-
-                OPCTable = new DataTable();
-                //OPCTable.Columns.Add("Server", typeof(string));
-                OPCTable.Columns.Add("Type", typeof(System.Type));
-                OPCTable.Columns.Add("Name", typeof(string));
-                OPCTable.Columns.Add("Access", typeof(string));
-
-                OTSTable = new DataTable();
-                OTSTable.Columns.Add("Sheet", typeof(string));
-                OTSTable.Columns.Add("Type", typeof(string));
-                OTSTable.Columns.Add("Name", typeof(string));
-                OTSTable.Columns.Add("Param", typeof(string));
-                OTSTable.Columns.Add("Unit", typeof(string));
-                OTSTable.Columns.Add("Value", typeof(double));
+            treeViewAdvTag.SuspendLayout();
+            this.treeViewAdvTag.Model = CommonController.Instance.TreemodelTag;
+            this.treeViewAdvTag.ExpandAll();
+            treeViewAdvTag.ResumeLayout();
 
 
+            this.opcLocalServers = CommonController.Instance.OPCLocalServerNames;
 
-                this.MappingList = new List<MappingData>();
-                //this.dataGridViewOTS.DataSource = Controller.Instance.HYSYSTagList;
-                //this.dataGridViewOPC.DataSource = this.OPCItemlist;
-                isSet = true;
+            OPCTable = new DataTable();
+            //OPCTable.Columns.Add("Server", typeof(string));
+            OPCTable.Columns.Add("Type", typeof(System.Type));
+            OPCTable.Columns.Add("Name", typeof(string));
+            OPCTable.Columns.Add("Access", typeof(string));
 
+            OTSTable = new DataTable();
+            OTSTable.Columns.Add("Sheet", typeof(string));
+            OTSTable.Columns.Add("Type", typeof(string));
+            OTSTable.Columns.Add("Name", typeof(string));
+            OTSTable.Columns.Add("Param", typeof(string));
+            OTSTable.Columns.Add("Unit", typeof(string));
+            OTSTable.Columns.Add("Value", typeof(double));
 
+            this.MappingList = new List<MappingData>();
+            //this.dataGridViewOTS.DataSource = Controller.Instance.HYSYSTagList;
+            //this.dataGridViewOPC.DataSource = this.OPCItemlist;
 
-                this.dataGridViewOTS.Font = new Font("Tahoma", 7);
-                this.dataGridViewOPC.Font = new Font("Tahoma", 7);
-                this.dataGridViewMapping.Font = new Font("Tahoma", 7);
-            }
+            this.dataGridViewOTS.Font = new Font("Tahoma", 7);
+            this.dataGridViewOPC.Font = new Font("Tahoma", 7);
+            this.dataGridViewMapping.Font = new Font("Tahoma", 7);
+
         }
+
+        /// <summary>
+        /// Extension controller에 맞게 내용 구성
+        /// </summary>
+        /// <param name="pc">Extension controller</param>
         public void SetController(PrivateController pc)
         {
             this.CurrentController = pc;
@@ -111,6 +127,7 @@ namespace ARAUniSimSIMBridge
             this.groupBoxOPC.Text = string.Format("{0} Tags", pc.OPCServerName);
             this.Text = string.Format("Edit Mapping - {0}", pc.OPCServerName);
             this.OPCServerList = CommonController.Instance.GetOPCServers(pc);
+            this.ResultOK = false;
         }
 
         private void FormMapping_FormClosing(object sender, FormClosingEventArgs e)
@@ -119,6 +136,14 @@ namespace ARAUniSimSIMBridge
             this.Hide();
         }
 
+
+        /// <summary>
+        /// show dialog 에서 ctrl+i 로 데이터 교환속도 조회 \n
+        /// esc 키로는 창을 닫는다.
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="keyData"></param>
+        /// <returns></returns>
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
             if (keyData == (Keys.Control | Keys.I))
@@ -168,7 +193,7 @@ namespace ARAUniSimSIMBridge
         }
 
 
-        public void UpdateOTSTable()
+        private void UpdateOTSTable()
         {
             try
             {
@@ -191,7 +216,8 @@ namespace ARAUniSimSIMBridge
             }
             catch { }
         }
-        public void UpdateOPCTable()
+
+        private void UpdateOPCTable()
         {
             try
             {
@@ -236,7 +262,9 @@ namespace ARAUniSimSIMBridge
             }
             catch { }
         }
-        public void UpdateMappingTable()
+
+
+        private void UpdateMappingTable()
         {
             try
             {
@@ -261,6 +289,9 @@ namespace ARAUniSimSIMBridge
             catch { }
         }
 
+        /// <summary>
+        /// Mapping list 갱신
+        /// </summary>
         public void UpdateTable()
         {
             this.UpdateOTSTable();
@@ -268,7 +299,8 @@ namespace ARAUniSimSIMBridge
             this.UpdateMappingTable();
         }
 
-        public void SetMappingColumns()
+
+        private void SetMappingColumns()
         {
             for (int i = 0; i < this.dataGridViewMapping.Columns.Count; i++)
             {
@@ -299,7 +331,7 @@ namespace ARAUniSimSIMBridge
                             newserver.SetServer(daserver);
                             this.OPCServerList.Add(newserver);
 
-                            CommonController.Instance.BrowseChildren(newserver, daserver, svrnode.Nodes, null);
+                            CommonController.Instance.BrowseChildren(newserver, svrnode.Nodes, null);
 
                             //svrnode.Image = this.imageList1.Images[3];
                             svrnode.Image = Properties.Resources.server_link;
@@ -351,31 +383,6 @@ namespace ARAUniSimSIMBridge
                     //hyContainer.Trace(ex.StackTrace, false);
                 }
             }*/
-        }
-
-        private Opc.Server FindServerNode(Node node)
-        {
-            Opc.Server result = null;
-
-            if (node.Tag is Opc.Server)
-            {
-                Opc.Server sd = node.Tag as Opc.Server;
-                for (int i = 0; i < this.OPCServerList.Count; i++)
-                {
-                    if (this.OPCServerList[i].Server.Name == sd.Name)
-                    {
-                        result = this.OPCServerList[i].Server;
-                        return result;
-                    }
-                }
-            }
-            else
-            {
-                if (node.Parent != null)
-                    result = this.FindServerNode(node.Parent);
-            }
-
-            return result;
         }
 
 
@@ -493,7 +500,7 @@ namespace ARAUniSimSIMBridge
             {
                 this.CurrentController.MappingList.Add(this.MappingList[i].Clone() as MappingData);
             }
-            ResultOK = true;
+            this.ResultOK = true;
             this.Hide();
         }
 

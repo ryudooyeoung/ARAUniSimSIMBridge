@@ -43,6 +43,7 @@ ExtensionVariables EV
    TextVar "txtNetworkServerSelected" "txtNetworkServerSelected" 0 Volatile NoTriggerSolve
    TextVariable "txtUniqueID" "txtUniqueID" 0 Persistent NoTriggerSolve HideInNavigators
    Message "msgResetMapping" "msgResetMapping" NoTriggerSolve
+   TextVariable "txtCreateDate" "txtCreateDate" 0 Persistent NoTriggerSolve HideInNavigators
    ExtensionType "UnitOperation"
    ObjectDescription "ARASIMBridge 20170728"
    BaseVariables "flowobj"
@@ -386,6 +387,12 @@ TextMatrixInfo colOtherCPUClockTimes
    ViewOnly True
 end
 
+StaticText StaticText1
+   Area 94 168 280 8
+   TargetMoniker ":ExtraData.0.0(txtOLGAMessage)"
+   SourceViewMgr VisPage 1
+end
+
 NumericMatrixInfo colRealTimeFactor
    Moniker ":ExtraData.0.0(dblRealTimeFactor)"
    Label "Real Time Factor"
@@ -395,11 +402,5 @@ end
 NumericMatrixInfo colOLGARunInterval
    Moniker ":ExtraData.0.0(dblOLGARunInterval)"
    Label "Run Interval"
-end
-
-StaticText StaticText1
-   Area 94 168 280 8
-   TargetMoniker ":ExtraData.0.0(txtOLGAMessage)"
-   SourceViewMgr VisPage 1
 end
 

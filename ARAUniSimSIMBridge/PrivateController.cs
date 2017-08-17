@@ -8,39 +8,70 @@ using System.Diagnostics;
 using System.Xml.Serialization;
 using System.IO;
 using System.Windows.Forms;
-using Aga.Controls.Tree;
-using OpcCom;
 using Opc;
-using System.Net.Sockets;
 using UniSimDesign;
-using Microsoft.Win32;
-using System.Linq.Expressions;
 
-using System.Runtime.Remoting.Channels;
-using System.Runtime.Remoting;
-using System.Runtime.Remoting.Channels.Ipc;
 using Opc.Da;
-using System.Runtime.InteropServices;
-using System.Reflection;
 using System.Text.RegularExpressions;
 
 namespace ARAUniSimSIMBridge
 {
+    /// <summary>
+    /// Extension 상태 구분.
+    /// </summary>
     public enum extensionStatus
     {
+        /// <summary>
+        /// 연결 해제, 에러, 처음시작
+        /// </summary>
         Disconnected,
+        /// <summary>
+        /// 연결 성공
+        /// </summary>
         Connected,
-        hasError,
-        Paused,
-        Running,
     }
+    /// <summary>
+    /// Extension 각각을 컨트롤.
+    /// </summary>
     public class PrivateController
     {
+        /// <summary>
+        /// 데이터 교환 mapping list.
+        /// </summary>
         public List<MappingData> MappingList { get; set; }
 
+        /// <summary>
+        /// local 존재하는 opcserver 목록
+        /// </summary>
         public InternalTextFlexVariable txtLocalServers { get; set; }
+        /// <summary>
+        /// newtwork 상에 존재하는 opcserver 목록
+        /// </summary>
         public InternalTextFlexVariable txtNetworkServers { get; set; }
+        /// <summary>
+        /// extension의 고유 ID
+        /// </summary>
         private InternalTextVariable txtUniqueID;
+        /// <summary>
+        /// extension의 고유 ID
+        /// </summary>
+        public string UniqueID
+        {
+            get
+            {
+                return this.txtUniqueID.Value;
+            }
+            set
+            {
+                this.txtUniqueID.Value = value;
+            }
+        }
+
+
+
+        /// <summary>
+        /// extension 구분 하기 위한 생성 날짜.
+        /// </summary>
         private InternalTextVariable txtCreateDate;
 
 
@@ -59,76 +90,145 @@ namespace ARAUniSimSIMBridge
         private InternalTextVariable txtLocalServerSelected;
 
 
-        //olga opc execute
+        
+        /// <summary>
+        /// olga opc인 경우 불러올 snapshot 파일 경로
+        /// </summary>
         public InternalTextVariable txtOLGASnapshot { get; set; }
+        /// <summary>
+        /// olga opc인 경우 실행 model genkey 파일 경로
+        /// </summary>
         public InternalTextVariable txtOLGAModel { get; set; }
+        /// <summary>
+        /// olga opc인 경우 olga 실행 파일 경로
+        /// </summary>
         private InternalTextVariable txtOLGAExecutable;
 
-        //mapping list
+        /// <summary>
+        /// mapping list 에서 보내는쪽 type
+        /// </summary>
         private InternalTextFlexVariable txtFromTypes;
+        /// <summary>
+        /// mapping list 에서 보내는쪽 tagname
+        /// </summary>
         private InternalTextFlexVariable txtFromNames;
+        /// <summary>
+        /// mapping list 에서 받는쪽 type
+        /// </summary>
         private InternalTextFlexVariable txtToTypes;
+        /// <summary>
+        /// mapping list 에서 받는쪽 tagname
+        /// </summary>
         private InternalTextFlexVariable txtToNames;
 
-        //olga opc server is running
+        /// <summary>
+        /// opc서버 연결상태 구분
+        /// </summary>
         public InternalRealVariable dblConnectedOPC { get; set; }
+        /// <summary>
+        /// 현재 시뮬레이션 동작중인지 구분
+        /// </summary>
         public InternalRealVariable dblRunningSim { get; set; }
 
 
-        //배속
+  
+        /// <summary>
+        /// data 교환 주기
+        /// </summary>
         public InternalRealVariable dblOLGARunInterval { get; set; }
+        /// <summary>
+        /// ots 실행 배속.
+        /// </summary>
         public InternalRealVariable dblRealTimeFactor { get; set; }
+        /// <summary>
+        /// 이전에 사용된 ots 실행 배속
+        /// </summary>
         public double preRealTimeFactor { get; set; }
 
 
-        //상태표시
+        /// <summary>
+        /// olga opc server 인경우 olga에서 표시되는 message
+        /// </summary>
         public InternalTextVariable txtOLGAMessage { get; set; }
+        /// <summary>
+        /// 현재 extension의 상태를 문자로 표시하기위한 변수
+        /// </summary>
         public InternalTextVariable txtSimStatus { get; set; }
+        /// <summary>
+        /// 현재 extension의 상태를 색상으로 표시하기위한 변수
+        ///-1 dark green
+        ///0 red
+        ///1 green
+        ///2 blue
+        ///3 pink
+        ///4 sky
+        ///5 gray
+        ///6 black
+        ///7 yellow
+        ///8 white 
+        /// </summary>
         public InternalRealVariable dblSimStatus { get; set; }
 
 
 
+        /// <summary>
+        /// 컴퓨터 시간 표시
+        /// </summary>
         public InternalTextFlexVariable txtCPUClockTimes { get; set; }
+        /// <summary>
+        /// ots 시간 표시
+        /// </summary>
         public InternalTextFlexVariable txtUniSimTimes { get; set; }
+        /// <summary>
+        /// olga opc server 시간 표시.
+        /// </summary>
         public InternalTextFlexVariable txtOLGATimes { get; set; }
 
 
 
-
+        /// <summary>
+        /// data교환에 사용되는 thread
+        /// </summary>
         public Thread threadDataExchange { get; set; }
 
-        public extensionStatus status = extensionStatus.Disconnected;
-
-
-        private string MappingPath = string.Empty;
 
         /// <summary>
-        /// 실제로 데이터 ots-opc 데이터 교환을 할 수 있는지.
+        /// 현재 extension 상태 표시.
+        /// </summary>
+        public extensionStatus status = extensionStatus.Disconnected;
+
+        /// <summary>
+        /// mppaing list xml 저장 경로
+        /// </summary>
+        private string MappingPath;
+
+        /// <summary>
+        /// 실제로 데이터 ots-opc 데이터 교환중인지
         /// </summary>
         public bool IsStartDataExchange { get; set; }
+
+        /// <summary>
+        /// mapping list가 제대로 datatable, opc group에 적용 됐는지
+        /// </summary>
         public bool IsApplyMapping { get; set; }
-        public bool IsTerminated { get; set; }
 
-        public string UniqueID
-        {
-            get
-            {
-                return this.txtUniqueID.Value;
-            }
-            set
-            {
-                this.txtUniqueID.Value = value;
-            }
-        }
+        /// <summary>
+        /// unisimDesign을 제어하기위한 변수
+        /// </summary>
+        private ExtnUnitOperationContainer hyContainer;
 
+        /// <summary>
+        /// 생산자.
+        /// </summary>
         public PrivateController()
         {
-            this.IsTerminated = false;
             this.MappingList = new List<MappingData>();
         }
 
-
-        private ExtnUnitOperationContainer hyContainer;
+        /// <summary>
+        /// 기본 설정
+        /// </summary>
+        /// <param name="hyContainer">ots container</param>
         public void SetContainer(ExtnUnitOperationContainer hyContainer)
         {
             this.hyContainer = hyContainer;
@@ -178,14 +278,7 @@ namespace ARAUniSimSIMBridge
             this.dblRealTimeFactor = (InternalRealVariable)hyContainer.FindVariable("dblRealTimeFactor").Variable;
             this.SetStatus(extensionStatus.Disconnected); //초기설정
 
-
             this.txtOLGAMessage = (InternalTextVariable)hyContainer.FindVariable("txtOLGAMessage").Variable;
-
-            //this.myPlotName = (InternalTextVariable)hyContainer.FindVariable("plotName").Variable;
-            //this.executeData = (InternalRealFlexVariable)hyContainer.FindVariable("executeData").Variable;
-            //this.timeData = (InternalRealFlexVariable)hyContainer.FindVariable("timeData").Variable;
-            //this.CreatePlot();
-
 
             CommonController.Instance.RegisterController(this);
             CommonController.Instance.SetContainer(hyContainer);
@@ -195,7 +288,9 @@ namespace ARAUniSimSIMBridge
         }
 
 
-
+        /// <summary>
+        /// local opc server 목록에서 선택했을 경우 이벤트 처리.
+        /// </summary>
         public void SelectLocalServer()
         {
             //CommonController.Instance.PrintLog(txtLocalServerSelected.Value + ", " + this.GetOPCServerName());
@@ -209,10 +304,6 @@ namespace ARAUniSimSIMBridge
             }
         }
 
-        public void SelectNetworkServer()
-        {
-
-        }
 
 
 
@@ -238,6 +329,11 @@ namespace ARAUniSimSIMBridge
             return result;
         }
 
+        /// <summary>
+        /// Olga model 저장하기.
+        /// </summary>
+        /// <param name="path">저장경로</param>
+        /// <returns>true 성공, false 실패</returns>
         public bool SaveOLGASnapshot(string path)
         {
             bool result = false;
@@ -260,7 +356,7 @@ namespace ARAUniSimSIMBridge
                     os.ItemValues = cg.Read(cg.Items);
                     while ((string)os.ItemValues[2].Value == "STATE_COMMAND")
                     {
-                        Thread.Sleep(1);
+                        Thread.Sleep(10);
                         os.ItemValues = cg.Read(cg.Items);
                     }
 
@@ -268,10 +364,14 @@ namespace ARAUniSimSIMBridge
                     break;
                 }
             }
-
             return result;
         }
 
+
+        /// <summary>
+        /// Olga model 불러오기
+        /// </summary>
+        /// <param name="path">경로</param>
         public void LoadOLGASanpshot(string path)
         {
             List<OPCServer> myOPCServers = CommonController.Instance.GetOPCServers(this);
@@ -306,15 +406,19 @@ namespace ARAUniSimSIMBridge
 
         private string PathModelConfigXML = string.Empty;
         private string PathLeastmappingXML = string.Empty;
+        /// <summary>
+        /// 내문서에 위치한 기본 작업 경로 설정.
+        /// </summary>
         public void SetBaseDocument()
         {
+            //새로 추가 된 extension인지 파악하기.
             if (string.IsNullOrEmpty(this.txtCreateDate.Value))
             {
+                //새로 추가된 extension.
                 this.txtCreateDate.Value = DateTime.Now.ToString("yyyyMMddhhmmssff");//새로만들어짐
             }
             else
             {
-                //기존에 있었음 
             }
 
             if (string.IsNullOrEmpty(this.txtUniqueID.Value))
@@ -327,7 +431,9 @@ namespace ARAUniSimSIMBridge
         }
 
 
-        ////// set the config 
+        /// <summary>
+        /// Olga, ots 저장하기.
+        /// </summary>
         public void TakeSnapshot()
         {
             if (this.status != extensionStatus.Connected) return;
@@ -340,9 +446,11 @@ namespace ARAUniSimSIMBridge
             }
         }
 
+        /// <summary>
+        /// mapping 편집하기.
+        /// </summary>
         public void ShowMappingEditor()
-        {
-            FormMapping.Instance.SetBrowser();
+        { 
             FormMapping.Instance.SetController(this);
             FormMapping.Instance.UpdateTable();
 
@@ -350,11 +458,15 @@ namespace ARAUniSimSIMBridge
 
             if (FormMapping.Instance.ResultOK)
             {
-                this.IsApplyMapping = false; //ShowBrowser
+                this.IsApplyMapping = false; //ShowBrowser 내용변경
                 this.SetMappingTable(); //show browser
             }
         }
 
+
+        /// <summary>
+        /// 모니터 화면 열기.
+        /// </summary>
         public void ShowMonitor()
         {
             FormMonitor.Instance.SetMonitor(this);
@@ -363,32 +475,36 @@ namespace ARAUniSimSIMBridge
 
 
 
-
-
-
-        //모듈 삭제시.
+        /// <summary>
+        /// extension 삭제시 데이터 정리하기.
+        /// </summary>
         public void RemoveData()
         {
+            //common controll에서 현재 extension 등록 해제함.
             CommonController.Instance.UnregisterController(this);
 
-            this.IsTerminated = true;
-            this.IsStartDataExchange = false; //RemoveData
-
-            CommonController.Instance.RemoveOPCServers(this);
-
+            //연결중인 opc
             this.KillMyOLGA();
 
-            this.threadDataExchange.Abort();
-            this.threadDataExchange = null;
+            try
+            {
+                this.IsStartDataExchange = false; //RemoveData
+                this.threadDataExchange.Abort();
+                this.threadDataExchange = null;
+            }
+            catch { }
         }
 
 
 
-        //맵핑 리스트 가져오기.
+        /// <summary>
+        /// mapping list 불러오기.
+        /// </summary>
+        /// <param name="path">경로</param>
         public void LoadMappingList(string path)
         {
             bool isLoad = false;
-            if (string.IsNullOrEmpty(path))
+            if (string.IsNullOrEmpty(path)) //config 파일에서 호출한경우 OpenFileDialog로 경로 찾기.
             {
                 OpenFileDialog ofd = new OpenFileDialog();
                 ofd.Filter = "XML Files (.xml)|*.xml";
@@ -428,17 +544,40 @@ namespace ARAUniSimSIMBridge
                     this.SetMappingTable(); //load
                 }
             }
-            this.IsApplyMapping = false; //load
+            this.IsApplyMapping = false; //load 내용변경
         }
 
 
+        /// <summary>
+        /// mapping list 모두 지우기.
+        /// </summary>
         public void ResetMappingList()
         {
-            this.IsApplyMapping = false; // reset
+            this.IsApplyMapping = false; // reset 내용 지우기
             this.MappingList.Clear();
             this.SetMappingTable();
         }
 
+
+        /// <summary>
+        /// Extension Save
+        /// </summary>
+        public void Save()
+        {
+            string olgasnapfile = string.Format("{0}\\{1}", CommonController.Instance.PathModelSnapshotDirectory, this.UniqueID);
+            if (this.SaveOLGASnapshot(olgasnapfile))
+            {
+                this.txtOLGASnapshot.Value = olgasnapfile + ".rsw";
+            }
+
+            this.SaveMappingList(true);
+            this.SaveConfiguration();
+        }
+
+        /// <summary>
+        /// 현재 mapping list 저장하기.
+        /// </summary>
+        /// <param name="autoSave"></param>
         public void SaveMappingList(bool autoSave = false)
         {
             string path = string.Empty;
@@ -476,7 +615,6 @@ namespace ARAUniSimSIMBridge
             //string doc = string.Format("{0}\\ARASIMBridge\\Config.xml", Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
 
             this.txtOLGAExecutable.Value = CommonController.Instance.PathInstalledOLGAEXE;
-
 
             if (File.Exists(this.PathModelConfigXML))
             {
@@ -522,18 +660,28 @@ namespace ARAUniSimSIMBridge
 
 
 
-
+        /// <summary>
+        /// OLGA OPC Server에서 쓰이는 Model name 
+        /// </summary>
         public string OLGAModelName { get; set; }
+        /// <summary>
+        /// OLGA OPC Server name.
+        /// </summary>
         public string OPCServerName { get; set; }
+
+        /// <summary>
+        /// genkey file에서 OLGA opc server 정보 추출하기.
+        /// </summary>
+        /// <param name="path">경로</param>
         private void GetModelINfoFromGenkey(string path)
         {
-
+            //기본 내용으로 초기화
             this.OPCServerName = "OLGAOPCServer";
             this.OLGAModelName = "ServerDemo";
 
+            //파일읽기 시작
             FileStream fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Read, FileShare.ReadWrite);
             StreamReader reader = new StreamReader(fs);
-
 
             StringBuilder strb = new StringBuilder();
             string strLine;
@@ -553,7 +701,7 @@ namespace ARAUniSimSIMBridge
                     }
                 }
 
-                if (check)
+                if (check) //server에 관련된 내용만 추려내기.
                 {
                     if (strLine.StartsWith("        "))
                     {
@@ -604,7 +752,7 @@ namespace ARAUniSimSIMBridge
 
             this.OPCServerName = "SPT." + this.OPCServerName;
 
-            //CommonController.Instance.PrintLog(this.OPCServerName);
+            //같은 이름의 모델을 사용하지는 체크
             if (CommonController.Instance.CheckDuplicatedOLGAOPCServer(this))
             {
                 CommonController.Instance.PrintLog(string.Format("OLGA OPC Server {0} is duplicated", this.OPCServerName));
@@ -615,7 +763,9 @@ namespace ARAUniSimSIMBridge
 
         }
 
-
+        /// <summary>
+        /// extension 설정 환경 xml로 저장하기.
+        /// </summary>
         public void SaveConfiguration()
         {
             Configuration cf = new Configuration()
@@ -644,7 +794,10 @@ namespace ARAUniSimSIMBridge
         }
 
 
-
+        /// <summary>
+        /// mapping list를 datatable, opc group에 적용하기.
+        /// </summary>
+        /// <returns></returns>
         private bool ApplyMappingTable()
         {
             bool noError = true;
@@ -675,25 +828,28 @@ namespace ARAUniSimSIMBridge
                 CommonController.Instance.CheckMappingOTS(serverNames, this.MappingList) == false)
             {
                 noError = false;
-                this.IsApplyMapping = false; //has error
+                this.IsApplyMapping = false; //체크 에러
             }
             else
             {
                 if (CommonController.Instance.AddMappingOPCOTS(serverNames, this.MappingList, this) == false)
                 {
                     noError = false;
-                    this.IsApplyMapping = false; //ApplyMappingTable
+                    this.IsApplyMapping = false; //적용중 에러
                 }
                 else
                 {
                     noError = true;
-                    this.IsApplyMapping = true;
+                    this.IsApplyMapping = true; // 적용 완료
                 }
             }
 
             return noError;
         }
 
+        /// <summary>
+        /// 현재 연결 된 opc server에 없는 mapping 정보가 있는지 파악하며 없으면 삭제한다.
+        /// </summary>
         private void CheckMappingList()
         {
             for (int i = this.MappingList.Count - 1; i >= 0; i--)
@@ -709,6 +865,9 @@ namespace ARAUniSimSIMBridge
             this.SetMappingTable();
         }
 
+        /// <summary>
+        /// edf matrix에 mapping list 내용 추가.
+        /// </summary>
         private void SetMappingTable()
         {
             txtFromTypes.SetBounds(MappingList.Count);
@@ -725,7 +884,6 @@ namespace ARAUniSimSIMBridge
             }
             else
             {
-
                 string[] ftypes = new string[MappingList.Count];
                 string[] fanmes = new string[MappingList.Count];
                 string[] ttypes = new string[MappingList.Count];
@@ -747,7 +905,7 @@ namespace ARAUniSimSIMBridge
 
 
         /// <summary>
-        /// 올가 실행파일 설정
+        /// OLGA 실행파일 경로 설정.
         /// </summary>
         public void LoadOLGAExecutable()
         {
@@ -758,6 +916,10 @@ namespace ARAUniSimSIMBridge
                 this.txtOLGAExecutable.Value = ofd.FileName;
             }
         }
+
+        /// <summary>
+        /// OLGA 스냅샷 파일 경로 설정.
+        /// </summary>
         public void LoadOLGASnapshot()
         {
             OpenFileDialog ofd = new OpenFileDialog();
@@ -785,8 +947,15 @@ namespace ARAUniSimSIMBridge
         }
 
 
-
+        /// <summary>
+        /// 서버가 변경 됐는지 체크하기 위한 이전 연결내역.
+        /// </summary>
         public double PreType = -99;
+
+        /// <summary>
+        /// OPC Server연결.
+        /// </summary>
+        /// <returns>true 성공, false 실패</returns>
         public bool ConnectOPCServer()
         {
             bool result = false;
@@ -809,12 +978,14 @@ namespace ARAUniSimSIMBridge
                 PreType = type;
                 this.IsApplyMapping = false; // 재연결
             }
-
-
             return result;
         }
 
 
+        /// <summary>
+        /// OLGA 이외 다른 OPC Server 연결 하기.
+        /// </summary>
+        /// <returns>true 성공, false 실패</returns>
         public bool connectOPCOther()
         {
             bool result = false;
@@ -834,10 +1005,13 @@ namespace ARAUniSimSIMBridge
                     result = true;
                 }
             }
-
             return result;
         }
 
+        /// <summary>
+        /// OLGA OPC Server 연결
+        /// </summary>
+        /// <returns>true 성공, false 실패</returns>
         public bool ConnectOPCOLGA()
         {
             if (File.Exists(this.txtOLGAExecutable.Value) == false)
@@ -882,7 +1056,7 @@ namespace ARAUniSimSIMBridge
             //현재 서버리스트 지우기
             CommonController.Instance.RemoveOPCServers(this); //execute에서 먼저 지우고 시작.
 
-
+            //olga opc server 실행
             if (this.ExecuteOLGA() == false) return false;
 
 
@@ -899,11 +1073,12 @@ namespace ARAUniSimSIMBridge
             }
 
 
-            //olga opc 접속
-
+            //olga opc 접속 
             if (CommonController.Instance.ConnectOPCServer(this.OPCServerName, this))
             {
-                if (loadSnapshot) this.LoadOLGASanpshot(this.txtOLGASnapshot.Value);
+                if (loadSnapshot)
+                    this.LoadOLGASanpshot(this.txtOLGASnapshot.Value);
+
                 this.dblConnectedOPC.SetValue(1);
             }
             else
@@ -916,7 +1091,9 @@ namespace ARAUniSimSIMBridge
             return true;
         }
 
-
+        /// <summary>
+        /// OPC Server 연결 끊기.
+        /// </summary>
         public void DisconnectOPCServer()
         {
             if (CommonController.Instance.integrator.IsRunning) return;
@@ -931,9 +1108,10 @@ namespace ARAUniSimSIMBridge
             this.dblConnectedOPC.SetValue(0);
         }
 
-
-
-
+        /// <summary>
+        /// 현재 extension 상태 표시.
+        /// </summary>
+        /// <param name="status"></param>
         public void SetStatus(extensionStatus status)
         {
             if (status == extensionStatus.Disconnected)
@@ -952,7 +1130,9 @@ namespace ARAUniSimSIMBridge
         }
 
 
-        //olga 실행
+        /// <summary>
+        /// 연결된 olga opc server process
+        /// </summary>
         private Process OLGAProcess = null;
         private bool ExecuteOLGA()
         {
@@ -980,6 +1160,10 @@ namespace ARAUniSimSIMBridge
             return true;
         }
 
+        /// <summary>
+        /// extension과 연결중인 olga opc server 프로세스 종료하기.
+        /// </summary>
+        /// <returns>true 성공, false 실패</returns>
         public bool KillMyOLGA()
         {
             bool result = true;
@@ -987,10 +1171,10 @@ namespace ARAUniSimSIMBridge
             {
                 try
                 {
+                    //olga opc server 종료
                     this.OLGAProcess.Kill();
 
-                    Opc.Server[] servers2 = new OpcCom.ServerEnumerator().GetAvailableServers(Specification.COM_DA_20);
-
+                    //olga opc server 등록 해제하기
                     Process process = new Process();
                     ProcessStartInfo cmd = new ProcessStartInfo()
                     {
@@ -1000,31 +1184,21 @@ namespace ARAUniSimSIMBridge
                         UseShellExecute = true,
                     };
 
-                    if (servers2 != null)
+                    if (string.IsNullOrEmpty(this.OPCServerName) == false)
                     {
-                        foreach (Opc.Server server in servers2)
-                        {
-                            if (server.Name.StartsWith("SPT."))
-                            {
-
-                                //Process.Start(this.txtOLGAExecutable.Value, "-unreg " + server.Name);
-
-                                cmd.Arguments = string.Format("-unreg {0}", server.Name);
-                                process.StartInfo = cmd;
-                                process.Start();
-                            }
-                        }
+                        cmd.Arguments = string.Format("-unreg {0}", this.OPCServerName);
+                        process.StartInfo = cmd;
+                        process.Start();
                     }
+
 
                     /*Process process = new Process();
                     ProcessStartInfo cmd = new ProcessStartInfo();
-
                     cmd.WindowStyle = ProcessWindowStyle.Hidden;
                     cmd.FileName = this.txtOLGAExecutable.Value;
                     cmd.Arguments = string.Format("-unreg {0}", this.GetOLGAOPCServerName());
                     cmd.CreateNoWindow = false;
                     cmd.UseShellExecute = true;
-
                     process.StartInfo = cmd;
                     process.Start();*/
 
@@ -1035,10 +1209,13 @@ namespace ARAUniSimSIMBridge
                     result = false;
                 }
             }
+
             return result;
         }
 
-        //olga exe 종료
+        /// <summary>
+        /// 모든 olga opcserver 종료시키기
+        /// </summary>
         private void KillAllOLGA()
         {
             //이미 실행중이라면 종료
@@ -1069,16 +1246,39 @@ namespace ARAUniSimSIMBridge
                 }
             }
 
-            Process.Start(this.txtOLGAExecutable.Value, "-unreg " + this.OPCServerName);
+
+
+            Process process2 = new Process();
+            ProcessStartInfo cmd2 = new ProcessStartInfo()
+            {
+                WindowStyle = ProcessWindowStyle.Hidden,
+                FileName = this.txtOLGAExecutable.Value,
+                CreateNoWindow = true,
+                UseShellExecute = true,
+            };
+            Opc.Server[] servers2 = new OpcCom.ServerEnumerator().GetAvailableServers(Specification.COM_DA_20);
+            if (servers2 != null)
+            {
+                foreach (Opc.Server server in servers2)
+                {
+                    //if (server.Name.StartsWith("SPT."))
+                    if (server.Name.StartsWith(this.OPCServerName))
+                    {
+                        //Process.Start(this.txtOLGAExecutable.Value, "-unreg " + server.Name);
+                        cmd2.Arguments = string.Format("-unreg {0}", this.OPCServerName);
+                        process2.StartInfo = cmd2;
+                        process2.Start();
+                    }
+                }
+            }
         }
 
-
-
-
-
+        /// <summary>
+        /// ots 시작 준비.
+        /// </summary>
+        /// <returns>ots시작 준비 완료 여부</returns>
         public bool PrepareStartSimulation()
         {
-
             if (this.status != extensionStatus.Connected)
             {
                 if (this.ConnectOPCServer() == false)
@@ -1108,41 +1308,35 @@ namespace ARAUniSimSIMBridge
 
             this.UpdateTImes(true);
 
-
             this.doEventsOPCToOTS = new ManualResetEvent[myOPCServers.Count];
             this.doEventsOTSToOPC = new ManualResetEvent[myReadDTs.Count];
             for (int maini = 0; maini < myOPCServers.Count; maini++) doEventsOPCToOTS[maini] = new ManualResetEvent(true);
             for (int maini = 0; maini < myReadDTs.Count; maini++) doEventsOTSToOPC[maini] = new ManualResetEvent(true);
 
-
-
             return true;
         }
 
+        /// <summary>
+        /// 데이터 교환 시작
+        /// </summary>
         public void StartSimulation()
         {
-            //if (MappingList.Count == 0) return false;
-            //if (OPCServerList.Count == 0) return false;
-
-
-
             //데이터 교환 시작.
             this.IsStartDataExchange = true; //start 
             this.threadDataExchange = new Thread(procDataExcahnge);
-            this.threadDataExchange.IsBackground = false;
+            this.threadDataExchange.IsBackground = true;
             this.threadDataExchange.Name = "DataExchange";
             this.threadDataExchange.Start();
         }
 
-
-
-        public bool StopSimulation()
+        /// <summary>
+        /// 데이터 교환 중지
+        /// </summary>
+        /// <returns></returns>
+        public void StopSimulation()
         {
-            bool haserror = false;
             this.IsStartDataExchange = false; //stop 
-            return haserror;
         }
-
 
         private DateTime preTime;
         private DateTime curTime;
@@ -1155,7 +1349,9 @@ namespace ARAUniSimSIMBridge
         private DateTime CPUStartTime;
         private DateTime CPUEndTime;
 
-
+        /// <summary>
+        /// Data 교환 주기
+        /// </summary>
         public int RunInterval = 1;
         private int baseAccessTime = 500;
         private int accessTime = 1;
@@ -1165,7 +1361,10 @@ namespace ARAUniSimSIMBridge
         private List<OPCServer> myOPCServers = null;
         private List<OTSDataTable> myReadDTs = null;
         private List<OTSDataTable> myWriteDTs = null;
-        TimeSpan cycleElapsed;
+        private TimeSpan cycleElapsed;
+        /// <summary>
+        /// 데이터 교환.
+        /// </summary>
         private void procDataExcahnge()
         {
             try
@@ -1177,7 +1376,7 @@ namespace ARAUniSimSIMBridge
                 }
 
                 DateTime cycleStart = DateTime.Now;
-                while (IsStartDataExchange && IsTerminated == false)
+                while (IsStartDataExchange)
                 {
                     cycleStart = DateTime.Now;
 
@@ -1202,15 +1401,18 @@ namespace ARAUniSimSIMBridge
 
                     //스텝 표시 
                     new Thread(() => this.UpdateTImes()).Start();
-
                 }
             }
-            catch 
-            {
-                //CommonController.Instance.PrintLog(ex.StackTrace);
-            }
+            catch { }
+            //try catch 중요함!!!
+            //error 발생시 ots가 강제 종료 되므로 반드시 try catch로 묶에 예외 처리해함.
         }
 
+
+        /// <summary>
+        /// cpu, ots, opcserver 시간 표시하기.
+        /// </summary>
+        /// <param name="isFirst">맨처음 시간 표시여부.</param>
         private void UpdateTImes(bool isFirst = false)
         {
             try
@@ -1221,10 +1423,11 @@ namespace ARAUniSimSIMBridge
                     this.OTSStartTime = CommonController.Instance.integrator.CurrentTime.Value;
                 }
 
+                //olga opc srever 시간 가져오기.
                 for (int i = 0; i < this.myOPCServers.Count; i++)
                 {
                     OPCServer osg = this.myOPCServers[i];
-                    if (osg.Server.Name.StartsWith("SPT."))
+                    if (osg.Server.Name.StartsWith("SPT.")) //olga 서버 가져오기.
                     {
                         OPCSubscription os = osg.CommandSubscription;
                         Opc.Da.Subscription cg = os.Subscription; //cmd
@@ -1245,14 +1448,15 @@ namespace ARAUniSimSIMBridge
 
                 //step info 
                 double expectedTime = (TotalExecuteSteps * this.StepSize * this.RunInterval) / 1000.0f;
+
+
                 //this.txtConnectedServer.Value = string.Format("{0}", this.OPCServerName);
-
-
                 this.txtOLGAMessage.Value = string.Format("[{9}]{0}    {1}  {2} {3}    {4}*{5}/{6}={7}/{8}  {10}",
                    this.OPCServerName, this.UniqueID,
                    TotalExecuteSteps * this.RunInterval, this.ConvertTime(expectedTime),
                    this.StepSize, this.RunInterval, this.dblRealTimeFactor.Value, this.RunInterval, this.baseAccessTime,
                    CommonController.Instance.GetControllerIndex(this), cycleElapsed.TotalMilliseconds);
+
 
 
                 //ots time
@@ -1268,7 +1472,7 @@ namespace ARAUniSimSIMBridge
                 TimeSpan sp = this.CPUEndTime - this.CPUStartTime;
                 this.txtCPUClockTimes.Values = new string[] { CPUStartTime.ToString("hh:mm:ss"), CPUEndTime.ToString("hh:mm:ss"), this.ConvertTime(sp.TotalSeconds) };
 
-
+                //다른 extension 시간 update
                 if (isControlMain)
                 {
                     for (int i = 0; i < CommonController.Instance.Controllers.Count; i++)
@@ -1285,6 +1489,11 @@ namespace ARAUniSimSIMBridge
             }
         }
 
+        /// <summary>
+        /// hh:mm:ss 형식으로 변환
+        /// </summary>
+        /// <param name="dsec">초</param>
+        /// <returns>변환된 hh:mm:ss</returns>
         public string ConvertTime(double dsec)
         {
             int sec = (int)dsec;
@@ -1298,10 +1507,22 @@ namespace ARAUniSimSIMBridge
             return string.Format("{0:D2}:{1:D2}:{2:D2}", hour, min, sec);
         }
 
+        /// <summary>
+        /// data교환에만 사용된 시간.
+        /// </summary>
         public List<float> ElapsedTimes = new List<float>();
+        /// <summary>
+        /// 수정된 정지 시간
+        /// </summary>
         public List<int> AccessTimes = new List<int>();
+        /// <summary>
+        /// 1 cycle을 수행하는데 사용된 시간.
+        /// </summary>
         public List<float> GapTimes = new List<float>();
         private double StepSize = 0;
+        /// <summary>
+        /// 코드 실행시간 측정하고 계산하여 최대한 오차를 줄임.
+        /// </summary>
         private void CalcAccesstime()
         {
             // how long spend time.
@@ -1311,7 +1532,6 @@ namespace ARAUniSimSIMBridge
 
             GapTimes.Add((float)gap.TotalMilliseconds);
             if (GapTimes.Count > 600) GapTimes.RemoveAt(0);
-
 
             if (gap.TotalMilliseconds > accessTime)
             {
@@ -1334,6 +1554,10 @@ namespace ARAUniSimSIMBridge
             FormMonitor.Instance.RefreshMonitor();
         }
 
+        /// <summary>
+        /// 배속 적용
+        /// </summary>
+        /// <param name="RTF"></param>
         public void CalcRealtimeFactor(double RTF)
         {
             this.StepSize = CommonController.Instance.integrator.GetStepSize() * 1000;
@@ -1440,6 +1664,7 @@ namespace ARAUniSimSIMBridge
 
             return result;
         }
+
 
         private void DataExchangeOTSSelf(object obj)
         {

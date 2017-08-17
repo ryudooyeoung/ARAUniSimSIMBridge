@@ -12,68 +12,57 @@ using ARAUniSimSIMBridge.Data;
 using System.Diagnostics;
 using System.Threading;
 
+
 namespace ARAUniSimSIMBridge
 {
+    /// <summary>
+    /// Extension 기본 구성 class
+    /// </summary>
     [ComVisible(true)]
     [ProgId("ARAUniSimSIMBridge.ARASIMBridge")]
     [ClassInterface(ClassInterfaceType.AutoDispatch)]
-
-    /*
-    -1 dark green
-    0 red
-    1 green
-    2 blue
-    3 pink
-    4 sky
-    5 gray
-    6 black
-    7 yellow
-    8 white
-     */
     public class ARASIMBridge
     {
         private ExtnUnitOperationContainer hyContainer;
-        private ExtnDynUnitOpContainer dynContainer;
+        private ExtnDynUnitOpContainer dynContainer = null;
 
         private PrivateController controller = null;
-        bool isLoaded = false;
-        public ARASIMBridge()
-        {
-        }
+        private bool isLoaded = false;
 
-        ~ARASIMBridge()
-        {
-        }
-
+        /// <summary>
+        /// 맨처음 초기화
+        /// </summary> 
         public int Initialize(ExtnUnitOperationContainer Container, bool IsRecalling)
         {
             this.hyContainer = Container;
+
             this.controller = new PrivateController();
             this.controller.SetContainer(this.hyContainer);
 
             if (IsRecalling) { }
-
             return (int)CurrentExtensionVersion_enum.extnCurrentVersion;
         }
 
+        /// <summary>
+        /// extension 필수 함수
+        /// </summary> 
         public void Execute(bool isForgetpass)
         {
-            //hyContainer.Trace("Execute ", false); 
-            if (isForgetpass == true) { return; }
+            if (isForgetpass) { return; }
         }
 
-        ///////   Shared Methods
+        /// <summary>
+        /// extension 필수 함수
+        /// </summary> 
         public void StatusQuery(ObjectStatus Status)
         {
             try
             {
-
-                bool ignore = ((_IOperation)hyContainer.ExtensionInterface).IsIgnored;
-                if (ignore == true) { return; }
-                //((_IOperation)Status.Parent).name = "ARA SIMBridge";
+                if (hyContainer.IsIgnored) { return; }
 
                 if (this.isLoaded == false)
                 {
+                    //((_IOperation)Status.Parent).name = "ARA SIMBridge";
                     this.controller.SetBaseDocument();
                     this.controller.LoadConfiguration();
                     this.isLoaded = true;
@@ -82,9 +71,13 @@ namespace ARAUniSimSIMBridge
             catch { }
         }
 
+        /// <summary>
+        /// EDF 파일(디자인폼)에서 버튼이나 내용변경에 따른 이벤트를
+        /// message(string)로 구분하여 처리한다.
+        /// </summary>
+        /// <param name="Variable"></param>
         public void VariableChanged(InternalVariableWrapper Variable)
         {
-
             if (Variable.Tag == "msgLoadOLGAEXE") //올가 실행경로 불러오기
             {
                 this.controller.LoadOLGAExecutable();
@@ -121,7 +114,7 @@ namespace ARAUniSimSIMBridge
 
             else if (Variable.Tag == "msgMonitor")
             {
-                this.controller.ShowMonitor();
+                this.controller.ShowMonitor(); //속도,값 확인하기.
             }
             else if (Variable.Tag == "msgAddMapping") //태그 매핑 만들기.
             {
@@ -129,87 +122,191 @@ namespace ARAUniSimSIMBridge
             }
             else if (Variable.Tag == "msgSnapshot") //스탭샷 저장.
             {
-                this.controller.TakeSnapshot();
+                this.controller.TakeSnapshot(); //olga snapshot 저장.
             }
-
             else if (Variable.Tag == "msgLocalServers")
             {
-                this.controller.SelectLocalServer();
+                this.controller.SelectLocalServer(); //server
             }
         }
 
-        ///////  about dynamic method 
+
+        /// <summary>
+        /// Extension 기본 함수
+        /// </summary> 
+        public bool VariableChanging(InternalVariableWrapper variable)
+        {
+            bool isOK = true; 
+            return isOK;
+        }
+
+
+
+        #region functions for dynamic extension
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
         public void DynInitialize(ExtnDynUnitOpContainer pContainer, bool IsRecalling, long MyVersion, bool HoldupExist)
         {
-            dynContainer = pContainer;
+            this.dynContainer = pContainer;
             HoldupExist = false;
             MyVersion = (int)CurrentExtensionVersion_enum.extnCurrentVersion;
-
-
         }
 
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
         public bool InitializeSystem(bool ForceInit)
         {
-            //this.PrintLog("InitializeSystem");
             return true;
         }
 
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
         public long NumberOfFlowEquations()
         {
-            //this.PrintLog("NumberOfFlowEquations");
             return 0;
         }
 
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
         public long NumberOfPressBalEquations()
         {
-            //this.PrintLog("NumberOfPressBalEquations");
             return 0;
         }
-
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
         public long NumberOfFlowBalEquations()
         {
-            //this.PrintLog("NumberOfFlowBalEquations");
             return 0;
         }
-
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
         public long NumberOfGeneralEquations()
         {
-            // this.PrintLog("NumberOfGeneralEquations");
             return 0;
         }
-
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
         public bool PreProcessStates(double Dtime)
         {
-            //this.PrintLog("PreProcessStates");
             return true;
         }
-
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
         public bool PostProcessStates(double Dtime)
         {
-            //this.PrintLog("PostProcessStates");
             return true;
         }
-
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
         public bool StepEnergyExplicitly(double Dtime)
         {
-            //this.PrintLog("StepEnergyExplicitly");
             return true;
         }
-
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
         public bool StepCompositionExplicitly(double Dtime)
         {
-            //this.PrintLog("StepCompositionExplicitly");
+            return true;
+        }
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
+        public void CoefficientsOfFlowEquations(out object k1, out object k2)
+        {
+            throw new Exception("The method or operation is not implemented.");
+        }
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
+        public object FlowInFlowEquations()
+        {
+            throw new Exception("The method or operation is not implemented.");
+        }
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
+        public void ReferencePressureInFlowEquations(out object p1, out object p2)
+        {
+            throw new Exception("The method or operation is not implemented.");
+        }
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
+        public void UpdateCoefficientsOfFlowEquations(double Dtime, out object k1, out object k2)
+        {
+            throw new Exception("The method or operation is not implemented.");
+        }
+        /// <summary>
+        /// dynamic extension 필수 함수
+        /// </summary> 
+        public object UpdateDensities(double Dtime)
+        {
+            throw new Exception("The method or operation is not implemented.");
+        } 
+
+        /// <summary>
+        /// Extension 기본 함수, 모델 저장시 자동 호출
+        /// </summary>
+        public void Save()
+        {
+            this.controller.Save();
+        }
+
+       
+
+        /// <summary>
+        /// Extension 기본 함수
+        /// </summary> 
+        public void VariableQuery(InternalVariableWrapper variable)
+        {
+            //Not implemented
+        }
+
+        /// <summary>
+        /// Extension 기본 함수
+        /// </summary> 
+        public bool OnHelp(ref string helpPanel)
+        {
             return true;
         }
 
-        ///////  about windows method  
-        /*public void OnView(object msgvar)
-        {}*/
+        /// <summary>
+        /// edf 화면 호출시 자동 호출, 여기에 다른 작업을 선행 할 수 있다.
+        /// false를 반환하면 화면 뜨지않음.
+        /// </summary>
+        /// <param name="viewName"></param>
+        /// <returns></returns>
+        public bool OnView(ref string viewName)
+        {
+            return true;
+        }
+        #endregion
 
+
+
+        /// <summary>
+        /// extension 종료시 호출 되는 함수.
+        /// 1. extension 삭제시
+        /// 2. unisim 종료시
+        /// </summary>
         public void Terminate()
         {
-            //Controller.Instance.PrintLog("Terminate");
             this.controller.RemoveData();
+
+            Marshal.FinalReleaseComObject(hyContainer);
+            hyContainer = null;
+            Marshal.FinalReleaseComObject(dynContainer);
+            dynContainer = null;
         }
     }
 }

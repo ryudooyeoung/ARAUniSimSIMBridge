@@ -7,23 +7,37 @@ using System.ComponentModel;
 
 namespace ARAUniSimSIMBridge.Data
 {
+    /// <summary>
+    /// Mapping list 정보
+    /// </summary>
     [Serializable]
     public class MappingData : ICloneable
     {
+        /// <summary>
+        /// 데이터를 보낼 ots, opc 이름
+        /// ots -> hysys
+        /// opc -> progid를 사용함
+        /// </summary>
         public string FromType { get; set; }
+        /// <summary>
+        /// 데이터를 보낼 tag name
+        /// </summary>
         public string FromName { get; set; }
-        [XmlIgnore]
-        [Browsable(false)]
-        public double FromValue { get; set; }
 
 
+        /// <summary>
+        /// 데이터를 받을 tag name
+        /// </summary>
         public string ToType { get; set; }
+        /// <summary>
+        /// 데이터를 받을 tag name
+        /// </summary>
         public string ToName { get; set; }
-        [XmlIgnore]
-        [Browsable(false)]
-        public double ToValue { get; set; }
 
-
+        /// <summary>
+        /// 아이템 복사
+        /// </summary>
+        /// <returns>복사된 item</returns>
         public object Clone()
         {
             MappingData result = new MappingData();
@@ -34,14 +48,13 @@ namespace ARAUniSimSIMBridge.Data
             result.ToType = this.ToType;
             result.ToName = this.ToName;
 
-            result.FromValue = this.FromValue;
-            result.ToValue = this.ToValue;
-
-
             return result;
-
         }
 
+        /// <summary>
+        /// 정보 출력
+        /// </summary>
+        /// <returns>정보</returns>
         public override string ToString()
         {
             return string.Format("{0}[{1}] - {2}[{3}]", FromType, FromName, ToType, ToName);

@@ -10,17 +10,21 @@ using ARAUniSimSIMBridge.Data;
 using Aga.Controls.Tree;
 using OpcCom;
 using Opc;
-using System.Windows.Forms;
 using Microsoft.Win32;
 using System.Xml.Serialization;
 using Opc.Da;
 
 namespace ARAUniSimSIMBridge
 {
+    /// <summary>
+    /// 각기 다른 extension을 제어하기 위한 공통 클래스
+    /// </summary>
     public class CommonController
     {
-
         private static CommonController _instance = null;
+        /// <summary>
+        /// 싱글톤 instance
+        /// </summary>
         public static CommonController Instance
         {
             get
@@ -33,32 +37,74 @@ namespace ARAUniSimSIMBridge
             }
         }
 
-        public ExtnUnitOperationContainer hyContainer;
-        public Flowsheet flowsheet;
-        public _SimulationCase simCase;
-        public Solver solver;
-        public Integrator integrator;
-        public FixedDataTables hypdb;
+        /// <summary>
+        /// OTS Container
+        /// </summary>
+        public ExtnUnitOperationContainer hyContainer = null;
+        /// <summary>
+        /// flow sheet
+        /// </summary>
+        public Flowsheet flowsheet = null;
+        /// <summary>
+        /// simulation case
+        /// </summary>
+        public _SimulationCase simCase = null;
+        /// <summary>
+        /// solver
+        /// </summary>
+        public Solver solver = null;
+        /// <summary>
+        /// Integrator
+        /// </summary>
+        public Integrator integrator = null;
+        /// <summary>
+        /// data table list
+        /// </summary>
+        public FixedDataTables hypdb = null;
 
+        /// <summary>
+        /// extension 모음.
+        /// </summary>
         public List<PrivateController> Controllers { get; set; }
+
+        /// <summary>
+        /// opc server 들을 tree 형식으로 표시하기 위해, formmonitor에서 쓰인다.
+        /// </summary>
         public TreeModel TreemodelOPC { get; set; }
+        /// <summary>
+        /// ots tag 정보를 tree 형식으로 표시하기 위해, formmonitor에서 쓰인다.
+        /// </summary>
         public TreeModel TreemodelTag { get; set; }
+        /// <summary>
+        /// ots model에 존재하는 operation tag들.
+        /// </summary>
         public List<OTSTagData> OTSTagList { get; set; }
 
-        public double StepsOfOTS { get; set; }
-        public string TimesOfReal { get; set; }
-        public string TimesOfOTS { get; set; }
-
+        /// <summary>
+        /// OPC server name list
+        /// </summary>
         public List<string> OPCLocalServerNames { get; set; }
 
+        /// <summary>
+        /// OPC server list
+        /// </summary>
         public List<OPCServer> OPCServerList { get; set; }
+        /// <summary>
+        /// OTS read 용 data table
+        /// </summary>
         public List<OTSDataTable> OTSReadDataTableList { get; set; }
+        /// <summary>
+        /// OTS write 용 data table
+        /// </summary>
         public List<OTSDataTable> OTSWriteDataTableList { get; set; }
 
         private bool IsTerminated = false;
         private bool IsRunningOTS = false;//init
         private Thread threadCheckSystem; //DRTF, Factor, modified
 
+        /// <summary>
+        /// 생성자
+        /// </summary>
         public CommonController()
         {
             this.TreemodelOPC = new TreeModel();
@@ -71,14 +117,15 @@ namespace ARAUniSimSIMBridge
             this.Controllers = new List<PrivateController>();
         }
 
+        /// <summary>
+        /// extension 준비
+        /// </summary>
+        /// <param name="Container">container</param>
         public void SetContainer(ExtnUnitOperationContainer Container)
         {
             if (this.hyContainer == null)
             {
-                Stopwatch sw = new Stopwatch();
-                sw.Start();
                 this.hyContainer = Container;
-
 
                 this.flowsheet = this.hyContainer.Flowsheet;
                 this.hypdb = this.hyContainer.SimulationCase.DataTables;
@@ -87,28 +134,24 @@ namespace ARAUniSimSIMBridge
                 this.integrator = this.hyContainer.SimulationCase.Solver.Integrator;
 
 
-
                 //opc 목록 가져오기.
                 this.GetOPCServerList(); //처음 갱신.
 
-
                 this.GetTagList(this.flowsheet, this.TreemodelTag.Nodes);
 
-
+                //공통 작업 폴더 설정
                 this.SetBaseDocument();
 
                 //opc서버 저장 상태
                 this.IsTerminated = false; //start
                 this.IsRunningOTS = false; //start
 
-                /*
                 this.threadCheckSystem = new Thread(this.procCheckSystem);
                 this.threadCheckSystem.IsBackground = true;
                 this.threadCheckSystem.Name = "CheckSystem";
-                this.threadCheckSystem.Start();*/
+                this.threadCheckSystem.Start();
 
-                sw.Stop();
-                //this.PrintLog(sw.ElapsedMilliseconds + ", SetContainer");
+                FormMapping.Instance.SetBrowser();
             }
 
         }
@@ -138,6 +181,9 @@ namespace ARAUniSimSIMBridge
         /// </summary>
         public string PathInstalledOLGAEXE { get; set; }
 
+        /// <summary>
+        /// 공통 작업 폴더 설정
+        /// </summary>
         private void SetBaseDocument()
         {
             this.PathSIMBridgeDirectory = string.Format("{0}\\ARASIMBridge", Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
@@ -145,8 +191,6 @@ namespace ARAUniSimSIMBridge
             {
                 Directory.CreateDirectory(PathSIMBridgeDirectory);
             }
-
-
 
             this.PathOLGAEXEConfig = string.Format("{0}\\OLGAExePath.xml", this.PathSIMBridgeDirectory);
 
@@ -195,6 +239,9 @@ namespace ARAUniSimSIMBridge
             }
         }
 
+        /// <summary>
+        /// arasimbridge 실행시키기.
+        /// </summary>
         private void CheckARAExtensionSIMBridge()
         {
             Process[] pss = Process.GetProcesses();
@@ -213,6 +260,10 @@ namespace ARAUniSimSIMBridge
             }
         }
 
+        /// <summary>
+        /// extension 등록
+        /// </summary>
+        /// <param name="controller">controller</param>
         public void RegisterController(PrivateController controller)
         {
             if (this.Controllers.Count > 0)
@@ -226,48 +277,69 @@ namespace ARAUniSimSIMBridge
 
         }
 
+        /// <summary>
+        /// extension 등록 해제
+        /// 모두 해제시에는 초기화 작업 수행
+        /// </summary>
+        /// <param name="controller">controller</param>
         public void UnregisterController(PrivateController controller)
         {
+            this.RemoveOPCServers(controller);
+
             this.Controllers.Remove(controller);
 
             if (this.Controllers.Count == 0)
             {
-                this.hyContainer = null;
- 
-                if (this.threadCheckSystem != null)
+                try
                 {
                     this.threadCheckSystem.Abort();
                     this.threadCheckSystem = null;
                 }
+                catch
+                { }
 
-                this.IsTerminated = true; //end
-                this.IsRunningOTS = false; //end
+                try
+                {
+                    this.IsTerminated = true; //end
+                    this.IsRunningOTS = false; //end
 
-                this.OPCServerList.Clear();
-                this.OTSTagList.Clear();
-                this.OTSReadDataTableList.Clear();
-                this.OTSWriteDataTableList.Clear();
-                this.Controllers.Clear();
-                this.OPCLocalServerNames.Clear();
+                    this.OPCServerList.Clear();
+                    this.OTSTagList.Clear();
+                    this.OTSReadDataTableList.Clear();
+                    this.OTSWriteDataTableList.Clear();
+                    this.Controllers.Clear();
+                    this.OPCLocalServerNames.Clear();
 
-                this.TreemodelOPC.Nodes.Clear();
-                this.TreemodelTag.Nodes.Clear();
+                    this.TreemodelOPC.Nodes.Clear();
+                    this.TreemodelTag.Nodes.Clear();
 
-                FormMonitor.Instance.Dispose();
-                FormMapping.Instance.Dispose();
+                    FormMonitor.Instance.Dispose();
+                    FormMapping.Instance.Dispose();
+                }
+                catch
+                { }
             }
 
         }
 
+
+        /// <summary>
+        /// extension index 구하기
+        /// </summary>
+        /// <param name="controller"></param>
+        /// <returns></returns>
         public int GetControllerIndex(PrivateController controller)
         {
-            int result = -1;
-
-            result = this.Controllers.IndexOf(controller);
-
+            int result = this.Controllers.IndexOf(controller);
             return result;
         }
 
+
+        /// <summary>
+        /// 가장 작은 runinterval을 가진 extension 찾기.
+        /// 최소값 runinterval을 기준으로 데이터교환 수행.
+        /// </summary>
+        /// <returns></returns>
         public int GetMinimumIntervalControllerIndex()
         {
             int result = -1;
@@ -281,10 +353,13 @@ namespace ARAUniSimSIMBridge
                     result = i;
                 }
             }
-
             return result;
         }
 
+        /// <summary>
+        /// registry에 등록된 olga관련 내용을 찾아 설치 경로를 찾는다.
+        /// </summary>
+        /// <returns></returns>
         private string FindInstalledOLGA()
         {
             RegistryKey SoftwareKey = Registry.LocalMachine.OpenSubKey("Software", true).OpenSubKey("Microsoft", true).OpenSubKey("Windows", true).OpenSubKey("CurrentVersion", true).OpenSubKey("Uninstall", true);
@@ -317,6 +392,13 @@ namespace ARAUniSimSIMBridge
             return string.Empty;
         }
 
+
+        /// <summary>
+        /// 폴더 내에서 olga관련 실행 프로그램 찾기.
+        /// </summary>
+        /// <param name="path">폴더 경로</param>
+        /// <param name="OLGAfilename">찾을 이름</param>
+        /// <returns>전체 경로</returns>
         private string FindInstalledOLGA(string path, string OLGAfilename)
         {
             //this.PrintLog(path);
@@ -330,9 +412,9 @@ namespace ARAUniSimSIMBridge
                 string filename = Path.GetFileName(files[i]);
                 string extension = Path.GetExtension(files[i]);
 
+                //exe 파일 중에서 olga실행파일을 찾는다.
                 if (extension.Equals(".exe", StringComparison.InvariantCulture))
                 {
-                    //this.PrintLog(filename);
                     if (filename == OLGAfilename)
                     {
                         result = files[i];
@@ -341,6 +423,7 @@ namespace ARAUniSimSIMBridge
                 }
             }
 
+            //찾지 못했다면 하위 폴더에서 검색한다.
             if (string.IsNullOrEmpty(result))
             {
                 for (int i = 0; i < dirs.Length; i++)
@@ -353,15 +436,15 @@ namespace ARAUniSimSIMBridge
                     }
                 }
             }
-
-
             return result;
         }
 
+        /// <summary>
+        /// olga 실행 경로를 xml 형식으로 저장
+        /// </summary>
         public void SaveOLGAExecutablePath()
         {
             //string path = this.FindInstalledOLGA();
-
             OLGAConfig cf = new OLGAConfig()
             {
                 PathOLGAExecutable = this.PathInstalledOLGAEXE
@@ -374,24 +457,45 @@ namespace ARAUniSimSIMBridge
             }
         }
 
+        /// <summary>
+        /// ots trace 실행
+        /// </summary>
+        /// <param name="msg"></param>
         public void PrintLog(float msg)
         {
             PrintLog(msg.ToString());
         }
+        /// <summary>
+        /// ots trace 실행
+        /// </summary>
+        /// <param name="msg"></param>
         public void PrintLog(double msg)
         {
             PrintLog(msg.ToString());
         }
+        /// <summary>
+        /// ots trace 실행
+        /// </summary>
+        /// <param name="msg"></param>
         public void PrintLog(int msg)
         {
             PrintLog(msg.ToString());
         }
+        /// <summary>
+        /// ots trace 실행
+        /// </summary>
+        /// <param name="msg"></param>
         public void PrintLog(string msg)
         {
             if (hyContainer != null)
                 hyContainer.Trace(msg, false);
         }
 
+        /// <summary>
+        /// 중복된 extension이 있는지 파악.
+        /// </summary>
+        /// <param name="pc">검사할 extension controller</param>
+        /// <returns>true 중복, false 중복 없음</returns>
         public bool CheckDuplicatedOLGAOPCServer(PrivateController pc)
         {
             bool result = false;
@@ -410,17 +514,17 @@ namespace ARAUniSimSIMBridge
             return result;
         }
 
-        private DateTime OTSModelFileModifiedTIme;
         private double DTRF = -999999;
+        /// <summary>
+        /// 시스템 체크 시작. 
+        /// </summary>
         private void procCheckSystem()
         {
             try
             {
                 BackDoor bd = (UniSimDesign.BackDoor)this.integrator;
-                this.OTSModelFileModifiedTIme = File.GetLastAccessTime(this.simCase.FullName);
                 while (IsTerminated == false)
                 {
-
                     //check desired real time factor 
                     RealVariable rv = (RealVariable)bd.get_BackDoorVariable(":ExtraData.107").Variable;
                     if (rv.Value != DTRF)
@@ -436,6 +540,7 @@ namespace ARAUniSimSIMBridge
                         for (int i = 0; i < this.Controllers.Count; i++)
                         {
                             PrivateController pc = this.Controllers[i];
+
                             if (pc.dblRealTimeFactor.Value != 1)
                             {
                                 pc.dblRealTimeFactor.Value = 1;
@@ -448,8 +553,6 @@ namespace ARAUniSimSIMBridge
                         }
                     }
 
-
-
                     //if (IsTerminated) break;
                     //for (int i = 0; i < this.Controllers.Count; i++)
                     //{
@@ -459,17 +562,13 @@ namespace ARAUniSimSIMBridge
                     //        this.SetRealtimeFactor(pc.dblRealTimeFactor.Value);
                     //        break;
                     //    }
-                    //}
+                    //} 
 
 
-
-
+                    //run interval이 1보다 작다면 1로 변경
                     if (IsTerminated) break;
-                    //check data exchange step 
                     for (int i = 0; i < this.Controllers.Count; i++)
                     {
-                        if (IsTerminated) break;
-
                         PrivateController pc = this.Controllers[i];
                         double dbl = pc.dblOLGARunInterval.GetValue();
                         if (dbl < 1)
@@ -477,47 +576,17 @@ namespace ARAUniSimSIMBridge
                             pc.dblOLGARunInterval.SetValue(1);
                         }
                     }
-
-
-                    if (IsTerminated) break;
-                    // chek model file change 
-                    DateTime newTime = File.GetLastAccessTime(this.simCase.FullName);
-                    if (this.OTSModelFileModifiedTIme.CompareTo(newTime) != 0)
-                    {
-                        this.OTSModelFileModifiedTIme = newTime;
-
-                        for (int i = 0; i < this.Controllers.Count; i++)
-                        {
-                            if (IsTerminated) break;
-
-                            PrivateController pc = this.Controllers[i];
-
-                            string olgasnapfile = string.Format("{0}\\{1}", this.PathModelSnapshotDirectory, pc.UniqueID);
-                            if (pc.SaveOLGASnapshot(olgasnapfile))
-                            {
-                                pc.txtOLGASnapshot.Value = olgasnapfile + ".rsw";
-                            }
-
-                            pc.SaveMappingList(true);
-                            pc.SaveConfiguration();
-                        }
-                        this.DeleteNotUsingController();
-                    }
-
-
-                    if (IsTerminated) break;
+                     
                     // chek opc status
+                    if (IsTerminated) break;
                     for (int i = 0; i < this.Controllers.Count; i++)
                     {
-                        if (IsTerminated) break;
-
                         PrivateController pc = this.Controllers[i];
                         if (pc.dblConnectedOPC.Value == 1)
                         {
                             Opc.Server existOlga = this.FindOLGAOPCServer(pc.OPCServerName);
                             if (existOlga != null) //서버 있음
-                            {
-                            }
+                            { }
                             else //서버 없음.
                             {
                                 if (pc.status != extensionStatus.Disconnected)
@@ -535,9 +604,8 @@ namespace ARAUniSimSIMBridge
                     }
 
 
-
-                    if (IsTerminated) break;
                     // chek ots start
+                    if (IsTerminated) break;
                     if (this.integrator.IsRunning) //시작했다면
                     {
                         if (this.IsRunningOTS == false) //  시작전 아직 시작 체크가 안됐다면,
@@ -550,14 +618,7 @@ namespace ARAUniSimSIMBridge
                     {
                         if (this.IsRunningOTS == true) // 시작이었다면.
                         {
-                            for (int i = 0; i < this.Controllers.Count; i++)
-                            {
-                                if (IsTerminated) break;
-
-                                PrivateController pc = this.Controllers[i];
-                                pc.StopSimulation();
-                                pc.dblRunningSim.SetValue(0);//중지 표시.
-                            }
+                            this.StopSimulation(); 
                         }
                         this.IsRunningOTS = false; //중지 표시
                     }
@@ -568,34 +629,62 @@ namespace ARAUniSimSIMBridge
                     Thread.Sleep(10);
                 }
             }
-            catch (Exception ex)
+            catch  
             {
                 // this.PrintLog(ex.StackTrace);
             }
         }
 
+        /// <summary>
+        /// 데이터 교환 시작.
+        /// </summary>
         private void StartSimulation()
         {
             bool isprepare = true;
-            this.InitDataTable();
 
+            // this.InitDataTable();
+
+            //데이터 교환 준비
             for (int i = 0; i < this.Controllers.Count; i++)
             {
                 PrivateController pc = this.Controllers[i];
-                if (pc.PrepareStartSimulation() == false) isprepare = false;
+                if (pc.PrepareStartSimulation() == false)
+                    isprepare = false;
             }
+
+            //문제 없다면 시작.
             if (isprepare && IsTerminated == false)
             {
                 for (int i = 0; i < this.Controllers.Count; i++)
                 {
                     PrivateController pc = this.Controllers[i];
+                    pc.dblRunningSim.SetValue(1); //시작 표시.
                     pc.StartSimulation();
                     pc.SaveConfiguration();
-                    pc.dblRunningSim.SetValue(1); //시작 표시.
                 }
             }
         }
 
+        /// <summary>
+        /// 데이터 교환 중지.
+        /// </summary>
+        private void StopSimulation()
+        {
+            for (int i = 0; i < this.Controllers.Count; i++)
+            {
+                PrivateController pc = this.Controllers[i];
+                pc.StopSimulation();
+                pc.dblRunningSim.SetValue(0);//중지 표시.
+            }
+
+            this.DeleteNotUsingController();
+        }
+
+
+        /// <summary>
+        /// 배속 설정하기.
+        /// </summary>
+        /// <param name="rtf"></param>
         private void SetRealtimeFactor(double rtf)
         {
             for (int i = 0; i < this.Controllers.Count; i++)
@@ -606,6 +695,9 @@ namespace ARAUniSimSIMBridge
             }
         }
 
+        /// <summary>
+        /// 사용하지 않는 controller의 정보파일을 작업폴더에서 삭제하기.
+        /// </summary>
         private void DeleteNotUsingController()
         {
             List<string> ids = this.Controllers.Select(x => x.UniqueID).ToList();
@@ -657,6 +749,11 @@ namespace ARAUniSimSIMBridge
             }
         }
 
+        /// <summary>
+        /// ots taglist 불러오기
+        /// </summary>
+        /// <param name="fs">sheet</param>
+        /// <param name="nodes">저장할 node collection</param>
         private void GetTagList(UniSimDesign.Flowsheet fs, System.Collections.ObjectModel.Collection<Node> nodes)
         {
             Node fNode = new Node(fs.name);
@@ -679,7 +776,7 @@ namespace ARAUniSimSIMBridge
                 string sheet = op.TaggedName;
                 sheet = sheet.Split('@')[1];
 
-                HYSYSTagData htag = new HYSYSTagData() { type = type, name = name, sheet = sheet, op = op };
+                //HYSYSTagData htag = new HYSYSTagData() { type = type, name = name, sheet = sheet, op = op };
 
                 Node tNode = new Node(name);
                 fNode.Nodes.Add(tNode);
@@ -914,6 +1011,9 @@ namespace ARAUniSimSIMBridge
             //new Thread(procGetNetwork).Start(); 
         }
 
+        /// <summary>
+        /// network opc node 가져오기
+        /// </summary>
         private void procGetNetwork()
         {
             List<string> opcNetworkServers = new List<string>();
@@ -965,16 +1065,14 @@ namespace ARAUniSimSIMBridge
             }
         }
 
-        public void SetViewOLGAList()
-        {
-            for (int i = 0; i < this.Controllers.Count; i++)
-            {
-                PrivateController pc = this.Controllers[i];
-                pc.txtLocalServers.SetBounds(this.OPCLocalServerNames.Count);
-                pc.txtLocalServers.Values = this.OPCLocalServerNames.ToArray();
-            }
-        }
 
+        /// <summary>
+        /// mappinglist 적용하기.
+        /// </summary>
+        /// <param name="serverNames">사용 될 opc server names</param>
+        /// <param name="MappingList">MappingList</param>
+        /// <param name="pc">controller</param>
+        /// <returns>true 성공, false 실패</returns>
         public bool AddMappingOPCOTS(List<string> serverNames, List<MappingData> MappingList, PrivateController pc)
         {
             bool noError = true;
@@ -1106,7 +1204,7 @@ namespace ARAUniSimSIMBridge
                         if (ns.Connect()) //AddMappingOPCOTS 
                         {
                             //연결 성공시 모든 opc item 찾기.
-                            this.BrowseChildren(ns, dasvr, svrNode.Nodes, null);
+                            this.BrowseChildren(ns, svrNode.Nodes, null);
                             //svrNode.Image = FormBrowser.Instance.imagelist.Images[3];
                             svrNode.Image = Properties.Resources.monitor_link;
                         }
@@ -1372,10 +1470,14 @@ namespace ARAUniSimSIMBridge
             return noError;
         }
 
+        /// <summary>
+        /// ots mapping data가 올바르게 구성됐는지 파악
+        /// </summary>
+        /// <param name="serverNames">사용 될 opc server names</param>
+        /// <param name="MappingList">MappingList</param>
+        /// <returns>true 성공, false 실패</returns>
         public bool CheckMappingOTS(List<string> serverNames, List<MappingData> MappingList)
         {
-
-
             bool noError = true;
             int cnt = 0;
             StringBuilder strb = new StringBuilder();
@@ -1434,6 +1536,12 @@ namespace ARAUniSimSIMBridge
             return noError;
         }
 
+        /// <summary>
+        /// opc mapping data가 올바르게 구성됐는지 파악
+        /// </summary>
+        /// <param name="serverNames">사용 될 opc server names</param>
+        /// <param name="MappingList">MappingList</param>
+        /// <returns>true 성공, false 실패</returns>
         public bool CheckMappingOPC(List<string> serverNames, List<MappingData> MappingList)
         {
             bool noError = true;
@@ -1495,6 +1603,11 @@ namespace ARAUniSimSIMBridge
             return noError;
         }
 
+        /// <summary>
+        /// datatable에 사용할 이름이 중복인지 체크
+        /// </summary>
+        /// <param name="name">검사할 이름</param>
+        /// <returns>true 중복, false 중복 아님</returns>
         public bool CheckDatatable(string name)
         {
             if (this.hypdb.Count == 0) return false;
@@ -1514,11 +1627,11 @@ namespace ARAUniSimSIMBridge
             return exsist;
         }
 
-        public int CountOPCServer(PrivateController pc)
-        {
-            return GetOPCServers(pc).Count;
-        }
-
+        /// <summary>
+        /// 연결된 opc server중 해당 extension에 연결된 opc server만 추출
+        /// </summary>
+        /// <param name="pc">extension controller</param>
+        /// <returns>opc server list</returns>
         public List<OPCServer> GetOPCServers(PrivateController pc)
         {
             List<OPCServer> result = new List<OPCServer>();
@@ -1530,11 +1643,12 @@ namespace ARAUniSimSIMBridge
             return result;
         }
 
-        public int CountOTSReadDatatable(PrivateController pc)
-        {
-            return GetOTSReadDatatables(pc).Count;
-        }
 
+        /// <summary>
+        /// read datatable에서 해당 extension과 관련된 datatable list얻기
+        /// </summary>
+        /// <param name="pc">extension controller</param>
+        /// <returns>datatable list</returns>
         public List<OTSDataTable> GetOTSReadDatatables(PrivateController pc)
         {
             List<OTSDataTable> result = new List<OTSDataTable>();
@@ -1546,11 +1660,12 @@ namespace ARAUniSimSIMBridge
             return result;
         }
 
-        public int CountOTSWriteDatatable(PrivateController pc)
-        {
-            return GetOTSWriteDatatables(pc).Count;
-        }
 
+        /// <summary>
+        /// write datatable에서 해당 extension과 관련된 datatable list얻기
+        /// </summary>
+        /// <param name="pc">extension controller</param>
+        /// <returns>datatable list</returns>
         public List<OTSDataTable> GetOTSWriteDatatables(PrivateController pc)
         {
             List<OTSDataTable> result = new List<OTSDataTable>();
@@ -1562,8 +1677,13 @@ namespace ARAUniSimSIMBridge
             return result;
         }
 
-        //////////////////////////////////////////////////////////////////
-        public void BrowseChildren(OPCServer osg, Opc.Da.Server daserver, System.Collections.ObjectModel.Collection<Node> nodes, string itemId = null)
+        /// <summary>
+        /// opc 노드 탐색.
+        /// </summary>
+        /// <param name="osg">opc server</param> 
+        /// <param name="nodes">노드 collection</param>
+        /// <param name="itemId">탐색할 item id</param>
+        public void BrowseChildren(OPCServer osg, System.Collections.ObjectModel.Collection<Node> nodes, string itemId = null)
         {
             osg.OPCItemlist.Clear();
             ItemIdentifier itemID = new ItemIdentifier(itemId);
@@ -1574,7 +1694,7 @@ namespace ARAUniSimSIMBridge
                 ReturnAllProperties = true,
                 ReturnPropertyValues = true,
             };
-            Opc.Da.BrowseElement[] elements = daserver.Browse(itemID, _Filters, out position);
+            Opc.Da.BrowseElement[] elements = osg.Server.Browse(itemID, _Filters, out position);
 
             foreach (Opc.Da.BrowseElement el in elements)
             {
@@ -1590,12 +1710,18 @@ namespace ARAUniSimSIMBridge
                 {
                     //Node blanknode = new Node("blank") { Tag = 123 };
                     //subnode.Nodes.Add(blanknode);
-                    FindFlatItem(osg, el, daserver, nodes);
+                    FindFlatItem(osg, el, nodes);
                 }
             }
-
         }
-        private void FindFlatItem(OPCServer osg, BrowseElement el, Opc.Da.Server Server, System.Collections.ObjectModel.Collection<Node> nodes)
+
+        /// <summary>
+        /// opc item 탐색
+        /// </summary>
+        /// <param name="osg">opc server</param>
+        /// <param name="el">탐색 시작할 element</param> 
+        /// <param name="nodes">노드 collection</param>
+        private void FindFlatItem(OPCServer osg, BrowseElement el, System.Collections.ObjectModel.Collection<Node> nodes)
         {
             Node subnode = new Node(el.Name) { Tag = el };
             nodes.Add(subnode);
@@ -1616,26 +1742,31 @@ namespace ARAUniSimSIMBridge
                     ReturnPropertyValues = true,
                 };
 
-                BrowseElement[] elements = Server.Browse(identifier, _Filters, out position);
+                BrowseElement[] elements = osg.Server.Browse(identifier, _Filters, out position);
 
                 if (elements == null) return;
 
                 foreach (BrowseElement item in elements)
                 {
-                    FindFlatItem(osg, item, Server, subnode.Nodes);
+                    FindFlatItem(osg, item, subnode.Nodes);
                 }
             }
         }
 
-        ////////////////////////////////////////////////////////////////
-        //flowsheet 에서 이름으로 operation찾기
-        public _IOperation FindObject(string name, string param)
+
+        /// <summary>
+        /// OTS Taglist 에서 tagname, parameter 모두 일치하는 operation 찾기.
+        /// </summary>
+        /// <param name="tagName">tag name</param>
+        /// <param name="param">parameter</param>
+        /// <returns>operation</returns>
+        public _IOperation FindObject(string tagName, string param)
         {
             _IOperation result = null;
 
             List<OTSTagData> list =
                (from query in this.OTSTagList.AsEnumerable()
-                where query.TagName == name && query.Parameter == param
+                where query.TagName == tagName && query.Parameter == param
                 select query).ToList();
 
 
@@ -1647,7 +1778,14 @@ namespace ARAUniSimSIMBridge
             return result;
         }
 
-        //datatable에 아이템 추가하기
+        /// <summary>
+        /// Datatable에 operation 삽입하기
+        /// </summary>
+        /// <param name="obj">Operation</param>
+        /// <param name="tagName">Tagname</param>
+        /// <param name="param">Parameter</param>
+        /// <param name="vars">datatable의 변수리스트</param>
+        /// <param name="acctype">접근 타입 read, readwrite</param>
         public void InsertDataInTable(_IOperation obj, string tagName, string param, VarDefinitions vars, DataTableAccessMode_enum acctype)
         {
             string type = obj.TypeName;
@@ -1690,7 +1828,9 @@ namespace ARAUniSimSIMBridge
             }
         }
 
-        //ara datatable 초기화 
+        /// <summary>
+        /// 모든 Datatable 삭제
+        /// </summary>
         public void InitDataTable()
         {
             for (int i = this.hypdb.Count - 1; i >= 0; i--)
@@ -1711,9 +1851,13 @@ namespace ARAUniSimSIMBridge
             }
         }
 
+
+        /// <summary>
+        /// 해당 Extension과 연결된 Datatable 삭제
+        /// </summary>
+        /// <param name="pc"></param>
         public void ResetControllerData(PrivateController pc)
         {
-
             for (int i = this.hypdb.Count - 1; i >= 0; i--)
             {
                 UniSimDesign.DataTable tbl = this.hypdb[i] as UniSimDesign.DataTable;
@@ -1750,24 +1894,28 @@ namespace ARAUniSimSIMBridge
 
         }
 
-        //opc tree 에서 node 찾기
-        public Node FindServerNode(string nodename)
+        /// <summary>
+        /// Tree 구조에서 Server name으로 node찾기.
+        /// </summary>
+        /// <param name="serverName">OPC Servername</param>
+        /// <returns>OPC server node</returns>
+        public Node FindServerNode(string serverName)
         {
             Node result = null;
             for (int i = 0; i < this.TreemodelOPC.Nodes.Count; i++)
             {
-                Node child = this.TreemodelOPC.Nodes[i];
+                Node node = this.TreemodelOPC.Nodes[i];
 
-                if (child.Text == nodename)
+                if (node.Text == serverName)
                 {
-                    result = child;
+                    result = node;
                     break;
                 }
                 else
                 {
-                    if (child.Nodes.Count > 0)
+                    if (node.Nodes.Count > 0)
                     {
-                        Node subnode = FindServerNode(child.Nodes, nodename);
+                        Node subnode = FindServerNode(node.Nodes, serverName);
                         if (subnode != null)
                         {
                             result = subnode;
@@ -1778,7 +1926,14 @@ namespace ARAUniSimSIMBridge
             }
             return result;
         }
-        private Node FindServerNode(System.Collections.ObjectModel.Collection<Node> nodes, string nodename)
+
+        /// <summary>
+        /// Tree 구조에서 Server name으로 node찾기.
+        /// </summary>
+        /// <param name="nodes">node list</param>
+        /// <param name="serverName">OPC Servername</param>
+        /// <returns>OPC server node</returns>
+        private Node FindServerNode(System.Collections.ObjectModel.Collection<Node> nodes, string serverName)
         {
             Node result = null;
 
@@ -1786,7 +1941,7 @@ namespace ARAUniSimSIMBridge
             {
                 Node child = nodes[i];
 
-                if (child.Text == nodename)
+                if (child.Text == serverName)
                 {
                     result = child;
                     break;
@@ -1795,7 +1950,7 @@ namespace ARAUniSimSIMBridge
                 {
                     if (child.Nodes.Count > 0)
                     {
-                        Node subnode = FindServerNode(child.Nodes, nodename);
+                        Node subnode = FindServerNode(child.Nodes, serverName);
                         if (subnode != null)
                         {
                             result = subnode;
@@ -1807,7 +1962,11 @@ namespace ARAUniSimSIMBridge
             return result;
         }
 
-        //opclist에서 server 찾기
+        /// <summary>
+        /// OPC Server Progid로 현재 연결중인 OPC Server 찾기
+        /// </summary>
+        /// <param name="progid">progID</param>
+        /// <returns>OPC Server</returns>
         public OPCServer FindOPCServerByProgID(string progid)
         {
             OPCServer result = null;
@@ -1823,7 +1982,10 @@ namespace ARAUniSimSIMBridge
         }
 
 
-        //현재 연결된 모든 opc server 아이템 지우기.
+        /// <summary>
+        /// Extension과 연결된 OPC Server 지우기
+        /// </summary>
+        /// <param name="pc"></param>
         public void RemoveOPCServers(PrivateController pc)
         {
             for (int i = OPCServerList.Count - 1; i >= 0; i--)
@@ -1832,20 +1994,24 @@ namespace ARAUniSimSIMBridge
 
                 if (osg.Controller == pc)
                 {
-
-                    osg.RemoveAllGroup(true);
-                    osg.Server.Disconnect();
-                    osg.Server.Dispose();
-
+                    try
+                    {
+                        osg.RemoveAllGroup(true);
+                        osg.Server.Disconnect();
+                        osg.Server.Dispose();
+                    }
+                    catch
+                    { }
                     this.OPCServerList.RemoveAt(i);
                 }
             }
+            pc.IsApplyMapping = false; //RemoveOPCServers opc server 삭제
 
-
-            pc.IsApplyMapping = false; //RemoveOPCServers
         }
 
-        //사용하지 않는 opc서버 그룹, 아이템 모두 지우기.
+        /// <summary>
+        /// 사용하지 않는 opc서버 그룹, 아이템 모두 지우기.
+        /// </summary>
         public void DisconnectNotusingServer()
         {
             List<MappingData> MappingList = new List<MappingData>();
@@ -1860,32 +2026,35 @@ namespace ARAUniSimSIMBridge
             List<string> serverNames2 = (from query in MappingList.AsEnumerable()
                                          select query.ToType).ToList();
 
+
             //서버이름 추리기.
             serverNames.AddRange(serverNames2);
             serverNames = serverNames.Distinct().ToList();
             serverNames.Sort();
 
 
-            //ServerEnumerator discovery = new OpcCom.ServerEnumerator();
-            //Opc.Server[] servers2 = discovery.GetAvailableServers(Specification.COM_DA_20);
+            //모든 mappinglist에서 한번도 나오지 않은 opc server가 연결 되어 있다면 연결 종료시킴.
             for (int i = OPCServerList.Count - 1; i >= 0; i--)
             {
                 OPCServer osg = OPCServerList[i];
 
                 if (serverNames.Contains(osg.Server.Name) == false)
                 {
-
                     Node svrNode = this.FindServerNode(osg.Name);
                     svrNode.Nodes.Clear();
                     //svrNode.Image = FormBrowser.Instance.imagelist.Images[2];
                     svrNode.Image = Properties.Resources.server;
                     osg.RemoveAllGroup(false);
-
                 }
             }
         }
 
-
+        /// <summary>
+        /// OPC Server 연결하기
+        /// </summary>
+        /// <param name="serverName">OPC ServerName</param>
+        /// <param name="pc">연결 될 Extension</param>
+        /// <returns>true 성공, false 실패</returns>
         public bool ConnectOPCServer(string serverName, PrivateController pc)
         {
             bool result = false;
@@ -1899,7 +2068,7 @@ namespace ARAUniSimSIMBridge
             Opc.Da.Server dasvr = (Opc.Da.Server)svr;
 
             OPCServer ns = null;
-            ns = FindOPCServerByProgID(serverName);
+            ns = this.FindOPCServerByProgID(serverName);
             if (ns == null) //없으면 새로 추가.
             {
                 ns = new OPCServer(pc);
@@ -1916,7 +2085,7 @@ namespace ARAUniSimSIMBridge
             {
                 if (ns.Connect())
                 {
-                    this.BrowseChildren(ns, dasvr, svrNode.Nodes, null);
+                    this.BrowseChildren(ns, svrNode.Nodes, null);
                     //svrNode.Image = FormBrowser.Instance.imagelist.Images[3];
                     svrNode.Image = Properties.Resources.server_link;
 
@@ -1930,13 +2099,15 @@ namespace ARAUniSimSIMBridge
             }
             result = true;
 
-
-
             return result;
         }
 
-        //현재 pc의 opc서버 목록에서 OLGA OPC Server 찾기
-        public Opc.Server FindOLGAOPCServer(string OPCServerName)
+        /// <summary>
+        /// local OPC Server 에서 해당 server name 검색
+        /// </summary>
+        /// <param name="serverName">server name</param>
+        /// <returns>opc server</returns>
+        public Opc.Server FindOLGAOPCServer(string serverName)
         {
             Opc.Server result = null;
 
@@ -1947,7 +2118,7 @@ namespace ARAUniSimSIMBridge
                 {
                     foreach (Opc.Server server in servers2)
                     {
-                        if (server.Name.StartsWith(OPCServerName))
+                        if (server.Name.StartsWith(serverName))
                         {
                             result = server;
                             break;
@@ -1955,16 +2126,7 @@ namespace ARAUniSimSIMBridge
                     }
                 }
             }
-
             return result;
         }
-
-
-
-
-
-
-
-
     }
 }

@@ -22,6 +22,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Debug\ARAUniSimSIMBridge.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -85,7 +86,6 @@
     </Compile>
     <Compile Include="PrivateController.cs" />
     <Compile Include="Data\Configuration.cs" />
-    <Compile Include="Data\HYSYSTagData.cs" />
     <Compile Include="Data\MappingData.cs" />
     <Compile Include="Data\OLGAConfig.cs" />
     <Compile Include="Data\OPCSubscription.cs" />

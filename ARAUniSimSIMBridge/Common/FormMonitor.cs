@@ -13,9 +13,15 @@ using Opc.Da;
 using System.Drawing.Drawing2D;
 namespace ARAUniSimSIMBridge
 {
+    /// <summary>
+    /// 데이터 교환 속도와 매핑 정보를 출력
+    /// </summary>
     public partial class FormMonitor : Form
     {
         private static FormMonitor _instance = null;
+        /// <summary>
+        /// 싱글톤 instance
+        /// </summary>
         public static FormMonitor Instance
         {
             get
@@ -39,20 +45,29 @@ namespace ARAUniSimSIMBridge
 
 
         private PrivateController CurrentController = null;
+
+        /// <summary>
+        /// 생성자
+        /// </summary>
         public FormMonitor()
         {
             InitializeComponent();
+
+            this.SetStyle(ControlStyles.DoubleBuffer, true);
+            this.SetStyle(ControlStyles.AllPaintingInWmPaint, true);
+            this.SetStyle(ControlStyles.UserPaint, true);
         }
 
+        /// <summary>
+        /// Monitor 기능 준비, 해당 Controller의 Data 교환 수행 속도와 Mapping 정보를 준비한다.
+        /// </summary>
+        /// <param name="controller"></param>
         public void SetMonitor(PrivateController controller)
         {
             this.CurrentController = controller;
-            this.UpdateServerlist();
 
 
             this.Text = this.CurrentController.UniqueID;
-
-
 
             this.elapsedTimes = this.CurrentController.ElapsedTimes;
             this.accessTimes = this.CurrentController.AccessTimes;
@@ -60,17 +75,16 @@ namespace ARAUniSimSIMBridge
             this.myOPCServers = CommonController.Instance.GetOPCServers(this.CurrentController);
             this.myReadDTs = CommonController.Instance.GetOTSReadDatatables(this.CurrentController);
             this.myWriteDTs = CommonController.Instance.GetOTSWriteDatatables(this.CurrentController);
-        }
 
 
-        public void UpdateServerlist()
-        {
             this.toolStripComboBoxOPCServer.Items.Clear();
             for (int i = 0; i < CommonController.Instance.Controllers.Count; i++)
             {
                 this.toolStripComboBoxOPCServer.Items.Add(CommonController.Instance.Controllers[i].UniqueID);
             }
         }
+
+
 
         private void toolStripComboBoxOPCServer_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -79,17 +93,19 @@ namespace ARAUniSimSIMBridge
             this.Text = this.CurrentController.UniqueID;
         }
 
-
-
         private void FormMonitor_FormClosing(object sender, FormClosingEventArgs e)
         {
             e.Cancel = true;
             this.Hide();
         }
 
+        /// <summary>
+        /// 화면 갱신.
+        /// </summary>
         public void RefreshMonitor()
         {
-            this.panelMonitor.Invalidate();
+            if (this.Visible)
+                this.panelMonitor.Invalidate();
         }
 
 
@@ -198,7 +214,7 @@ namespace ARAUniSimSIMBridge
             }
         }
 
-        Font tooltipFont = new Font("Consolas", 8);
+        private Font tooltipFont = new Font("Consolas", 8);
         private void panel1_Paint(object sender, PaintEventArgs e)
         {
 
@@ -362,7 +378,7 @@ namespace ARAUniSimSIMBridge
                     }
                 }
             }
-            catch (Exception ex)
+            catch  
             {
             }
         }
@@ -371,8 +387,6 @@ namespace ARAUniSimSIMBridge
         {
             this.RefreshMonitor();
         }
-
-
 
 
         private void toolStripMenuItemServerInfo_Click(object sender, EventArgs e)
@@ -427,9 +441,6 @@ namespace ARAUniSimSIMBridge
             toolStripMenuItemElapsedTime.Checked = !toolStripMenuItemElapsedTime.Checked;
             this.RefreshMonitor();
         }
-
-
-
 
     }
 }

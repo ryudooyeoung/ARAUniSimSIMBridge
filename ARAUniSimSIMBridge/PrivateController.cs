@@ -90,7 +90,7 @@ namespace ARAUniSimSIMBridge
         private InternalTextVariable txtLocalServerSelected;
 
 
-        
+
         /// <summary>
         /// olga opc인 경우 불러올 snapshot 파일 경로
         /// </summary>
@@ -131,7 +131,7 @@ namespace ARAUniSimSIMBridge
         public InternalRealVariable dblRunningSim { get; set; }
 
 
-  
+
         /// <summary>
         /// data 교환 주기
         /// </summary>
@@ -242,7 +242,7 @@ namespace ARAUniSimSIMBridge
             this.txtUniSimTimes = (InternalTextFlexVariable)hyContainer.FindVariable("txtUniSimTimes").Variable;
             this.txtUniSimTimes.SetBounds(3);
             this.txtCPUClockTimes.SetBounds(3);
-             
+
             this.txtCreateDate = (InternalTextVariable)hyContainer.FindVariable("txtCreateDate").Variable;
             this.txtUniqueID = (InternalTextVariable)hyContainer.FindVariable("txtUniqueID").Variable;
 
@@ -255,7 +255,7 @@ namespace ARAUniSimSIMBridge
 
             this.txtOLGASnapshot = (InternalTextVariable)hyContainer.FindVariable("txtOLGASnapshot").Variable;
             this.txtOLGAModel = (InternalTextVariable)hyContainer.FindVariable("txtOLGAModel").Variable;
-             
+
             this.txtFromTypes = (InternalTextFlexVariable)hyContainer.FindVariable("txtFromTypes").Variable;
             this.txtFromNames = (InternalTextFlexVariable)hyContainer.FindVariable("txtFromNames").Variable;
             this.txtToTypes = (InternalTextFlexVariable)hyContainer.FindVariable("txtToTypes").Variable;
@@ -272,7 +272,7 @@ namespace ARAUniSimSIMBridge
 
             this.dblOLGARunInterval = (InternalRealVariable)hyContainer.FindVariable("dblOLGARunInterval").Variable;
             this.dblRealTimeFactor = (InternalRealVariable)hyContainer.FindVariable("dblRealTimeFactor").Variable;
-         
+
             this.txtOLGAMessage = (InternalTextVariable)hyContainer.FindVariable("txtOLGAMessage").Variable;
 
 
@@ -453,7 +453,7 @@ namespace ARAUniSimSIMBridge
         /// mapping 편집하기.
         /// </summary>
         public void ShowMappingEditor()
-        { 
+        {
             FormMapping.Instance.SetController(this);
             FormMapping.Instance.UpdateTable();
 
@@ -1453,13 +1453,15 @@ namespace ARAUniSimSIMBridge
                 double expectedTime = (TotalExecuteSteps * this.StepSize * this.RunInterval) / 1000.0f;
 
 
-                //this.txtConnectedServer.Value = string.Format("{0}", this.OPCServerName);
-                this.txtOLGAMessage.Value = string.Format("[{9}]{0}    {1}  {2} {3}    {4}*{5}/{6}={7}/{8}  {10}",
-                   this.OPCServerName, this.UniqueID,
-                   TotalExecuteSteps * this.RunInterval, this.ConvertTime(expectedTime),
-                   this.StepSize, this.RunInterval, this.dblRealTimeFactor.Value, this.RunInterval, this.baseAccessTime,
-                   CommonController.Instance.GetControllerIndex(this), cycleElapsed.TotalMilliseconds);
-
+                if (CommonController.Instance.IsDebug)
+                {
+                    //this.txtConnectedServer.Value = string.Format("{0}", this.OPCServerName);
+                    this.txtOLGAMessage.Value = string.Format("[{9}]{0}    {1}  {2} {3}    {4}*{5}/{6}={7}/{8}  {10}",
+                       this.OPCServerName, this.UniqueID,
+                       TotalExecuteSteps * this.RunInterval, this.ConvertTime(expectedTime),
+                       this.StepSize, this.RunInterval, this.dblRealTimeFactor.Value, this.RunInterval, this.baseAccessTime,
+                       CommonController.Instance.GetControllerIndex(this), cycleElapsed.TotalMilliseconds);
+                }
 
 
                 //ots time

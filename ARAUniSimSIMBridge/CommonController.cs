@@ -102,6 +102,8 @@ namespace ARAUniSimSIMBridge
         private bool IsRunningOTS = false;//init
         private Thread threadCheckSystem; //DRTF, Factor, modified
 
+        public bool IsDebug = false;
+
         /// <summary>
         /// 생성자
         /// </summary>

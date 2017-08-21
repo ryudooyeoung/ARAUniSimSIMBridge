@@ -147,7 +147,6 @@ namespace ARAUniSimSIMBridge
         }
 
 
-
         #region functions for dynamic extension
         /// <summary>
         /// dynamic extension 필수 함수
@@ -260,14 +259,7 @@ namespace ARAUniSimSIMBridge
             throw new Exception("The method or operation is not implemented.");
         } 
 
-        /// <summary>
-        /// Extension 기본 함수, 모델 저장시 자동 호출
-        /// </summary>
-        public void Save()
-        {
-            this.controller.Save();
-        }
-
+      
        
 
         /// <summary>
@@ -298,6 +290,14 @@ namespace ARAUniSimSIMBridge
         }
         #endregion
 
+
+        /// <summary>
+        /// Extension 기본 함수, 모델 저장시 자동 호출
+        /// </summary>
+        public void Save()
+        {
+            this.controller.Save();
+        }
 
 
         /// <summary>

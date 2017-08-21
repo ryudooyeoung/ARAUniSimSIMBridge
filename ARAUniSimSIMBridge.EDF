@@ -130,7 +130,7 @@ MatrixWidget MatrixWidgetMapping
 end
 
 Button btnOLGAEXE
-   Area 366 16 12 8
+   Area 366 80 12 8
    Label "..."
    FixToRight
    SourceViewMgr VisServers 1
@@ -141,7 +141,7 @@ Button btnOLGAEXE
 end
 
 Button btnOLGAModel
-   Area 366 26 12 8
+   Area 366 90 12 8
    Label "..."
    FixToRight
    SourceViewMgr VisServers 1
@@ -185,7 +185,7 @@ Button btnMappingSave
 end
 
 MatrixWidget MatrixWidgetOLGAConfig
-   Area 96 16 268 29
+   Area 96 80 268 29
    StretchWidth
    SourceViewMgr VisServers 1
    SourceViewMgr VisPage 1
@@ -201,7 +201,7 @@ MatrixWidget MatrixWidgetOLGAConfig
 end
 
 MatrixWidget MatrixWidgetTimes
-   Area 96 90 268 29
+   Area 96 48 268 29
    StretchWidth
    SourceViewMgr VisPage 1
    SourceViewMgr VisServers 1
@@ -215,7 +215,7 @@ MatrixWidget MatrixWidgetTimes
 end
 
 MatrixWidget MatrixWidgetFators
-   Area 96 50 268 18
+   Area 96 16 268 20
    SourceViewMgr VisPage 1
    EnableMoniker ":ExtraData.0.0(dblRunningSim)"
    EnableOnFalse
@@ -228,25 +228,25 @@ MatrixWidget MatrixWidgetFators
 end
 
 StaticText StaticTextStartTime
-   Area 178 78 31 8
+   Area 178 38 31 8
    Label "Start Time"
    SourceViewMgr VisPage 1
 end
 
 StaticText StaticTextEndTime
-   Area 246 78 28 8
+   Area 246 38 28 8
    Label "End Time"
    SourceViewMgr VisPage 1
 end
 
 StaticText StaticTextElapsedTime
-   Area 310 78 40 8
+   Area 310 38 40 8
    Label "Elapsed Time"
    SourceViewMgr VisPage 1
 end
 
 Button btnOLGASnapshot
-   Area 366 36 12 8
+   Area 366 100 12 8
    Label ".."
    FixToRight
    SourceViewMgr VisServers 1
@@ -363,7 +363,7 @@ Button btnMappingClear
 end
 
 MatrixWidget MatrixWidgetOtherOPC
-   Area 96 90 268 21
+   Area 96 48 268 21
    StretchWidth
    SourceViewMgr VisPage 1
    SourceViewMgr VisServers 4

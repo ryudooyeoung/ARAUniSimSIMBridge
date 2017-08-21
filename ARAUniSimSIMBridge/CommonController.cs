@@ -154,6 +154,8 @@ namespace ARAUniSimSIMBridge
                 this.threadCheckSystem.Start();
 
                 FormMapping.Instance.SetBrowser();
+
+                this.integrator.Mode = IntegratorMode_enum.imManual;
             }
 
         }
@@ -302,6 +304,7 @@ namespace ARAUniSimSIMBridge
 
                 try
                 {
+                    this.hyContainer = null;
                     this.IsTerminated = true; //end
                     this.IsRunningOTS = false; //end
 
@@ -579,6 +582,8 @@ namespace ARAUniSimSIMBridge
                         }
                     }
 
+
+
                     // chek opc status
                     if (IsTerminated) break;
                     for (int i = 0; i < this.Controllers.Count; i++)
@@ -627,7 +632,7 @@ namespace ARAUniSimSIMBridge
                     }
 
 
-                    if (this.integrator.Mode != IntegratorMode_enum.imManual) this.integrator.Mode = IntegratorMode_enum.imManual;
+                    //if (this.integrator.Mode != IntegratorMode_enum.imManual) this.integrator.Mode = IntegratorMode_enum.imManual;
 
                     Thread.Sleep(10);
                 }
@@ -680,7 +685,7 @@ namespace ARAUniSimSIMBridge
                 pc.dblRunningSim.SetValue(0);//중지 표시.
             }
 
-            this.DeleteNotUsingController();
+            this.DeleteNotUsingController(); //stop일때
         }
 
 
@@ -698,10 +703,12 @@ namespace ARAUniSimSIMBridge
             }
         }
 
+
+
         /// <summary>
         /// 사용하지 않는 controller의 정보파일을 작업폴더에서 삭제하기.
         /// </summary>
-        private void DeleteNotUsingController()
+        public void DeleteNotUsingController()
         {
             List<string> ids = this.Controllers.Select(x => x.UniqueID).ToList();
             string[] files = Directory.GetFiles(this.PathModelWorkDirectory);
@@ -1126,7 +1133,6 @@ namespace ARAUniSimSIMBridge
                                                      where query.FromType.Equals(serverName, StringComparison.CurrentCultureIgnoreCase)
                                                      && query.ToType.Equals(serverName, StringComparison.CurrentCultureIgnoreCase)
                                                      select query).ToList();
-
                     if (selfMapping.Count > 0)
                     {
                         DataTable dt = (DataTable)this.hypdb.Add(string.Format("ara_{0}_{1}_r", pc.UniqueID, serverName));
@@ -1591,10 +1597,6 @@ namespace ARAUniSimSIMBridge
                 List<MappingData> readt = (from query in MappingList.AsEnumerable()
                                            where query.FromType.Equals(serverNames[maini], StringComparison.CurrentCultureIgnoreCase)
                                            select query).ToList();
-
-
-
-
                 for (int i = 0; i < readt.Count; i++)
                 {
                     Opc.Da.BrowseElement b = ns.OPCItemlist.Find(x => x.ItemName == readt[i].FromName);
@@ -1605,6 +1607,7 @@ namespace ARAUniSimSIMBridge
                         cnt++;
                     }
                 }
+
 
                 List<MappingData> writet = (from query in MappingList.AsEnumerable()
                                             where query.ToType.Equals(serverNames[maini], StringComparison.CurrentCultureIgnoreCase)

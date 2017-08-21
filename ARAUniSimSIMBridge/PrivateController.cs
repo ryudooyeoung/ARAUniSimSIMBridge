@@ -276,7 +276,9 @@ namespace ARAUniSimSIMBridge
             this.txtOLGAMessage = (InternalTextVariable)hyContainer.FindVariable("txtOLGAMessage").Variable;
 
 
+
             this.SetStatus(extensionStatus.Disconnected); //초기설정
+
             CommonController.Instance.RegisterController(this);
             CommonController.Instance.SetContainer(hyContainer);
 
@@ -293,11 +295,11 @@ namespace ARAUniSimSIMBridge
             //CommonController.Instance.PrintLog(txtLocalServerSelected.Value + ", " + this.GetOPCServerName());
             if (this.txtLocalServerSelected.Value.Equals("OLGA OPCServer"))
             {
-                this.dblOPCServerSelected.Value = 20;
+                this.dblOPCServerSelected.Value = 20; //olga 서버 선택
             }
             else
             {
-                this.dblOPCServerSelected.Value = 22;
+                this.dblOPCServerSelected.Value = 22; //olga 이외 다른서버 선택
             }
         }
 
@@ -575,6 +577,9 @@ namespace ARAUniSimSIMBridge
 
             this.SaveMappingList(true);
             this.SaveConfiguration();
+
+            if (CommonController.Instance.GetControllerIndex(this) == 0)
+                CommonController.Instance.DeleteNotUsingController(); //stop일때
         }
 
         /// <summary>
@@ -583,6 +588,8 @@ namespace ARAUniSimSIMBridge
         /// <param name="autoSave"></param>
         public void SaveMappingList(bool autoSave = false)
         {
+            if (this.MappingList.Count == 0) return;
+
             string path = string.Empty;
             if (autoSave)
             {
@@ -646,12 +653,14 @@ namespace ARAUniSimSIMBridge
                     this.txtLocalServerSelected.Value = cf.OPCServerName;
                     if (cf.OPCServerName.StartsWith("SPT."))
                     {
-                        this.dblOPCServerSelected.SetValue(20);
+                        this.dblOPCServerSelected.Value = 20; //olga 선택
                     }
                     else
                     {
-                        this.dblOPCServerSelected.SetValue(22);
+                        this.dblOPCServerSelected.Value = 22; //olga 이외 서버 선택
                     }
+
+                    this.PreType = this.dblOPCServerSelected.Value;
 
                     this.dblRealTimeFactor.Value = cf.Foctor;
                     this.preRealTimeFactor = cf.Foctor;
@@ -771,6 +780,12 @@ namespace ARAUniSimSIMBridge
         /// </summary>
         public void SaveConfiguration()
         {
+
+            if (string.IsNullOrEmpty(this.OPCServerName))
+            {
+                return;
+            }
+
             Configuration cf = new Configuration()
             {
                 PathOLGAGenkey = this.txtOLGAModel.Value,
@@ -780,6 +795,7 @@ namespace ARAUniSimSIMBridge
                 Foctor = this.dblRealTimeFactor.Value,
                 OPCServerName = this.OPCServerName,
             };
+
 
             if (this.OPCServerName.StartsWith("SPT.") == false)
             {
@@ -794,6 +810,7 @@ namespace ARAUniSimSIMBridge
             {
                 xmlSerializer.Serialize(reader, cf);
             }
+
         }
 
 
@@ -805,7 +822,7 @@ namespace ARAUniSimSIMBridge
         {
             bool noError = true;
 
-
+            //현재 연결된 OPC서버와 관련없는 Mapping data 삭제
             this.CheckMappingList();
 
             //find server name
@@ -978,9 +995,11 @@ namespace ARAUniSimSIMBridge
 
             if (PreType != type)
             {
-                PreType = type;
                 this.IsApplyMapping = false; // 재연결
+                //CommonController.Instance.PrintLog("server is changed");
             }
+
+            PreType = type;
             return result;
         }
 
@@ -1726,48 +1745,53 @@ namespace ARAUniSimSIMBridge
             }//end ots -> opc
         }
 
+
+
         private void DataExchangeOTSProc(object obj)
         {
             List<object> args = (List<object>)obj;
             OTSDataTable odt = (OTSDataTable)args[0];
             ManualResetEvent doevent = (ManualResetEvent)args[1];
 
-
-            if (odt.Type == 1)
+            try
             {
-                for (int subi = 0; subi < this.myOPCServers.Count; subi++)
+                if (odt.Type == 1)
                 {
-                    OPCServer opcSvr = this.myOPCServers[subi];
-                    if (odt.ConnectedServerName == opcSvr.Name)
+                    for (int subi = 0; subi < this.myOPCServers.Count; subi++)
                     {
-                        for (int subsubi = 0; subsubi < opcSvr.WriteSubscriptions.Count; subsubi++)
+                        OPCServer opcSvr = this.myOPCServers[subi];
+                        if (odt.ConnectedServerName == opcSvr.Name)
                         {
-                            OPCSubscription wos = opcSvr.WriteSubscriptions[subsubi];
-                            if (wos.Name == odt.ConnectedSubscriptionName)
+                            for (int subsubi = 0; subsubi < opcSvr.WriteSubscriptions.Count; subsubi++)
                             {
-                                odt.TagValues = odt.DataTable.GetAllValues() as double[];
-
-                                if (wos.ItemValues == null || wos.ItemValues.Length != odt.TagValues.Length)
-                                    wos.ItemValues = new ItemValueResult[odt.TagValues.Length];
-
-                                List<Opc.Da.ItemValue> values = new List<ItemValue>();
-                                for (int i = 0; i < odt.TagValues.Length; i++)
+                                OPCSubscription wos = opcSvr.WriteSubscriptions[subsubi];
+                                if (wos.Name == odt.ConnectedSubscriptionName)
                                 {
-                                    Opc.Da.Item item = wos.Subscription.Items[i];
-                                    System.Type wt = wos.ItemTypes[i];
-                                    object ConvertedValue = this.ConvertOTSToOPC(odt.TagValues[i], wt);
+                                    odt.TagValues = odt.DataTable.GetAllValues() as double[];
 
-                                    values.Add(new ItemValue(item) { Value = ConvertedValue });
-                                    wos.ItemValues[i] = new ItemValueResult(item) { Value = ConvertedValue };
+                                    if (wos.ItemValues == null || wos.ItemValues.Length != odt.TagValues.Length)
+                                        wos.ItemValues = new ItemValueResult[odt.TagValues.Length];
+
+                                    List<Opc.Da.ItemValue> values = new List<ItemValue>();
+                                    for (int i = 0; i < odt.TagValues.Length; i++)
+                                    {
+                                        Opc.Da.Item item = wos.Subscription.Items[i];
+                                        System.Type wt = wos.ItemTypes[i];
+                                        object ConvertedValue = this.ConvertOTSToOPC(odt.TagValues[i], wt);
+
+                                        values.Add(new ItemValue(item) { Value = ConvertedValue });
+                                        wos.ItemValues[i] = new ItemValueResult(item) { Value = ConvertedValue };
+                                    }
+
+                                    wos.Subscription.Write(values.ToArray());
+                                    break;
                                 }
-
-                                wos.Subscription.Write(values.ToArray());
-                                break;
                             }
-                        }
-                    }// end if
+                        }// end if
+                    }
                 }
             }
+            catch { }
 
             doevent.Set();
         }

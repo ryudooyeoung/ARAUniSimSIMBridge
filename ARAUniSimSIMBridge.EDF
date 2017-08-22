@@ -45,7 +45,7 @@ ExtensionVariables EV
    Message "msgResetMapping" "msgResetMapping" NoTriggerSolve
    TextVariable "txtCreateDate" "txtCreateDate" 0 Persistent NoTriggerSolve HideInNavigators
    ExtensionType "UnitOperation"
-   ObjectDescription "ARASIMBridge 20170818"
+   ObjectDescription "ARASIMBridge 20170821"
    BaseVariables "flowobj"
 end
 

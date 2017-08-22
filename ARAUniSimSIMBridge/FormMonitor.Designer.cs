@@ -34,7 +34,7 @@
             this.toolStripComboBoxOPCServer = new System.Windows.Forms.ToolStripComboBox();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemServerInfo = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItemElapsedTime = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemTags = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -71,7 +71,7 @@
             // 
             this.toolStripMenuItem1.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripMenuItemServerInfo,
-            this.toolStripMenuItemElapsedTime});
+            this.toolStripMenuItemTags});
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
             this.toolStripMenuItem1.Size = new System.Drawing.Size(78, 23);
             this.toolStripMenuItem1.Text = "Infomation";
@@ -83,12 +83,12 @@
             this.toolStripMenuItemServerInfo.Text = "Server";
             this.toolStripMenuItemServerInfo.Click += new System.EventHandler(this.toolStripMenuItemServerInfo_Click);
             // 
-            // toolStripMenuItemElapsedTime
+            // toolStripMenuItemTags
             // 
-            this.toolStripMenuItemElapsedTime.Name = "toolStripMenuItemElapsedTime";
-            this.toolStripMenuItemElapsedTime.Size = new System.Drawing.Size(152, 22);
-            this.toolStripMenuItemElapsedTime.Text = "Elapsed Time";
-            this.toolStripMenuItemElapsedTime.Click += new System.EventHandler(this.toolStripMenuItemElapsedTime_Click);
+            this.toolStripMenuItemTags.Name = "toolStripMenuItemTags";
+            this.toolStripMenuItemTags.Size = new System.Drawing.Size(152, 22);
+            this.toolStripMenuItemTags.Text = "Tags";
+            this.toolStripMenuItemTags.Click += new System.EventHandler(this.toolStripMenuItemTags_Click);
             // 
             // FormMonitor
             // 
@@ -118,6 +118,6 @@
         private System.Windows.Forms.ToolStripComboBox toolStripComboBoxOPCServer;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemServerInfo;
-        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemElapsedTime;
+        private System.Windows.Forms.ToolStripMenuItem toolStripMenuItemTags;
     }
 }

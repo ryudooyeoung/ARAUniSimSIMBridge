@@ -102,7 +102,7 @@ namespace ARAUniSimSIMBridge
         private bool IsRunningOTS = false;//init
         private Thread threadCheckSystem; //DRTF, Factor, modified
 
-        public bool IsDebug = false;
+        public bool IsDebug = true;
 
         /// <summary>
         /// 생성자
@@ -530,6 +530,7 @@ namespace ARAUniSimSIMBridge
                 BackDoor bd = (UniSimDesign.BackDoor)this.integrator;
                 while (IsTerminated == false)
                 {
+                    
                     //check desired real time factor 
                     RealVariable rv = (RealVariable)bd.get_BackDoorVariable(":ExtraData.107").Variable;
                     if (rv.Value != DTRF)
@@ -558,18 +559,6 @@ namespace ARAUniSimSIMBridge
                         }
                     }
 
-                    //if (IsTerminated) break;
-                    //for (int i = 0; i < this.Controllers.Count; i++)
-                    //{
-                    //    PrivateController pc = this.Controllers[i];
-                    //    if (pc.preRealTimeFactor != pc.dblRealTimeFactor.Value)
-                    //    {
-                    //        this.SetRealtimeFactor(pc.dblRealTimeFactor.Value);
-                    //        break;
-                    //    }
-                    //} 
-
-
                     //run interval이 1보다 작다면 1로 변경
                     if (IsTerminated) break;
                     for (int i = 0; i < this.Controllers.Count; i++)
@@ -581,6 +570,21 @@ namespace ARAUniSimSIMBridge
                             pc.dblOLGARunInterval.SetValue(1);
                         }
                     }
+
+
+                    /*
+                    if (IsTerminated) break;
+                    for (int i = 0; i < this.Controllers.Count; i++)
+                    {
+                        PrivateController pc = this.Controllers[i];
+                        if (pc.preRealTimeFactor != pc.dblRealTimeFactor.Value)
+                        {
+                            this.SetRealtimeFactor(pc.dblRealTimeFactor.Value);
+                            break;
+                        }
+                    }*/
+
+
 
 
 
@@ -632,9 +636,8 @@ namespace ARAUniSimSIMBridge
                     }
 
 
-                    //if (this.integrator.Mode != IntegratorMode_enum.imManual) this.integrator.Mode = IntegratorMode_enum.imManual;
-
-                    Thread.Sleep(10);
+                    if (this.integrator.Mode != IntegratorMode_enum.imManual) this.integrator.Mode = IntegratorMode_enum.imManual;
+                    Thread.Sleep(1);
                 }
             }
             catch
@@ -671,6 +674,8 @@ namespace ARAUniSimSIMBridge
                     pc.SaveConfiguration();
                 }
             }
+
+            this.DeleteNotUsingController();
         }
 
         /// <summary>
@@ -683,9 +688,7 @@ namespace ARAUniSimSIMBridge
                 PrivateController pc = this.Controllers[i];
                 pc.StopSimulation();
                 pc.dblRunningSim.SetValue(0);//중지 표시.
-            }
-
-            this.DeleteNotUsingController(); //stop일때
+            } 
         }
 
 
@@ -694,7 +697,7 @@ namespace ARAUniSimSIMBridge
         /// </summary>
         /// <param name="rtf"></param>
         private void SetRealtimeFactor(double rtf)
-        {
+        { 
             for (int i = 0; i < this.Controllers.Count; i++)
             {
                 PrivateController pc = this.Controllers[i];
@@ -1537,6 +1540,7 @@ namespace ARAUniSimSIMBridge
                     {
                         noError = false;
                         strb.AppendFormat("-{0}\n", readt[i].FromName);
+                        MappingList.Remove(readt[i]);
                         cnt++;
                     }
                 }
@@ -1554,7 +1558,8 @@ namespace ARAUniSimSIMBridge
                     if (b == null)
                     {
                         noError = false;
-                        strb.AppendFormat("-{0}\n", writet[i].FromName);
+                        strb.AppendFormat("-{0}\n", writet[i].ToName);
+                        MappingList.Remove(writet[i]);
                         cnt++;
                     }
                 }
@@ -1618,7 +1623,7 @@ namespace ARAUniSimSIMBridge
                     if (b == null)
                     {
                         noError = false;
-                        strb.AppendFormat("-{0}\n", writet[i].FromName);
+                        strb.AppendFormat("-{0}\n", writet[i].ToName);
                         cnt++;
                     }
                 }

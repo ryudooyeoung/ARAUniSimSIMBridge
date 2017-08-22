@@ -130,10 +130,7 @@ namespace ARAUniSimSIMBridge
             {
                 this.controller.TakeSnapshot(); //olga snapshot 저장.
             }
-            else if (Variable.Tag == "msgLocalServers")
-            {
-                this.controller.SelectLocalServer(); //server
-            }
+            else if (Variable.Tag == "msgLocalServers") { this.controller.SelectLocalServer(); }
         }
 
 
@@ -142,7 +139,13 @@ namespace ARAUniSimSIMBridge
         /// </summary> 
         public bool VariableChanging(InternalVariableWrapper variable)
         {
-            bool isOK = true; 
+            bool isOK = true;
+            //CommonController.Instance.PrintLog(variable.Tag);
+            if (variable.Tag == "txtLocalServerSelected")
+            {
+                //this.controller.SelectLocalServer(); //server
+                 
+            }
             return isOK;
         }
 
@@ -257,10 +260,10 @@ namespace ARAUniSimSIMBridge
         public object UpdateDensities(double Dtime)
         {
             throw new Exception("The method or operation is not implemented.");
-        } 
+        }
 
-      
-       
+
+
 
         /// <summary>
         /// Extension 기본 함수

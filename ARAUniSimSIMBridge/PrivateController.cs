@@ -78,7 +78,7 @@ namespace ARAUniSimSIMBridge
         /// <summary>
         /// opc server 선택 구분
         /// </summary>
-        private InternalRealVariable dblOPCServerSelected;
+        public InternalRealVariable dblOPCServerSelected;
 
         /// <summary>
         /// 현재 선택한 network opc server
@@ -87,7 +87,7 @@ namespace ARAUniSimSIMBridge
         /// <summary>
         /// 현재 선택한 local opc server
         /// </summary>
-        private InternalTextVariable txtLocalServerSelected;
+        public InternalTextVariable txtLocalServerSelected;
 
 
 
@@ -849,8 +849,10 @@ namespace ARAUniSimSIMBridge
             {
                 noError = false;
                 this.IsApplyMapping = false; //체크 에러
+                this.SetMappingTable();
             }
-            else
+
+            //else
             {
                 if (CommonController.Instance.AddMappingOPCOTS(serverNames, this.MappingList, this) == false)
                 {
@@ -1314,8 +1316,9 @@ namespace ARAUniSimSIMBridge
 
             this.RunInterval = (int)this.dblOLGARunInterval.Value;
 
-            BackDoor bd = (UniSimDesign.BackDoor)CommonController.Instance.integrator;
-            this.CalcRealtimeFactor(((RealVariable)bd.get_BackDoorVariable(":ExtraData.107").Variable).Value);
+            //BackDoor bd = (UniSimDesign.BackDoor)CommonController.Instance.integrator;
+            //this.CalcRealtimeFactor(((RealVariable)bd.get_BackDoorVariable(":ExtraData.107").Variable).Value);
+            this.CalcRealtimeFactor(dblRealTimeFactor.Value);
 
             this.myOPCServers = CommonController.Instance.GetOPCServers(this);
             this.myReadDTs = CommonController.Instance.GetOTSReadDatatables(this);
@@ -1403,13 +1406,6 @@ namespace ARAUniSimSIMBridge
                     cycleStart = DateTime.Now;
 
                     this.DataExchange();
-
-                    //check the all finished
-                    if (this.isControlMain)
-                    {
-                        CommonController.Instance.integrator.StepsToExecute += RunInterval;
-                    }
-
                     this.TotalExecuteSteps++;
 
                     this.cycleElapsed = DateTime.Now - cycleStart;
@@ -1422,7 +1418,8 @@ namespace ARAUniSimSIMBridge
                     Thread.Sleep(accessTime);
 
                     //스텝 표시 
-                    new Thread(() => this.UpdateTImes()).Start();
+                    //new Thread(() => this.UpdateTImes()).Start();
+                    this.UpdateTImes();
                 }
             }
             catch { }
@@ -1468,18 +1465,24 @@ namespace ARAUniSimSIMBridge
                 }
 
 
-                //step info 
-                double expectedTime = (TotalExecuteSteps * this.StepSize * this.RunInterval) / 1000.0f;
-
-
                 if (CommonController.Instance.IsDebug)
                 {
+                    //step info 
+                    double expectedTime = (TotalExecuteSteps * this.StepSize * this.RunInterval) / 1000.0f;
+
                     //this.txtConnectedServer.Value = string.Format("{0}", this.OPCServerName);
-                    this.txtOLGAMessage.Value = string.Format("[{9}]{0}    {1}  {2} {3}    {4}*{5}/{6}={7}/{8}  {10}",
-                       this.OPCServerName, this.UniqueID,
-                       TotalExecuteSteps * this.RunInterval, this.ConvertTime(expectedTime),
-                       this.StepSize, this.RunInterval, this.dblRealTimeFactor.Value, this.RunInterval, this.baseAccessTime,
-                       CommonController.Instance.GetControllerIndex(this), cycleElapsed.TotalMilliseconds);
+                    this.txtOLGAMessage.Value = string.Format("[{0}] {1} {2}={3}  {4}ms, {5}, {6}, {7}, {8}, {9}",
+                       CommonController.Instance.GetControllerIndex(this), //0
+                       this.UniqueID, //1
+                       TotalExecuteSteps * this.RunInterval, //2
+                       this.ConvertTime(expectedTime), //3
+                       this.StepSize, //4
+                       this.RunInterval, //5
+                       this.dblRealTimeFactor.Value,//6
+                       this.baseAccessTime,//7
+                       this.StepSize * this.RunInterval, //8
+                       cycleElapsed.TotalMilliseconds //9
+                       );
                 }
 
 
@@ -1909,6 +1912,7 @@ namespace ARAUniSimSIMBridge
         {
             try
             {
+
                 for (int maini = 0; maini < this.myOPCServers.Count; maini++)
                 {
                     OPCServer opcSvr = this.myOPCServers[maini];
@@ -1932,11 +1936,10 @@ namespace ARAUniSimSIMBridge
         private ManualResetEvent[] doEventsOTSToOPC;
         private void DataExchange()
         {
-            while (CommonController.Instance.integrator.StepsToExecute != 0)
+            while (CommonController.Instance.integrator.StepsToExecute > 0)
             {
-                Thread.Sleep(1);
+                Thread.Sleep(5);
             }
-
 
             for (int maini = 0; maini < myOPCServers.Count; maini++)
             {
@@ -1956,6 +1959,9 @@ namespace ARAUniSimSIMBridge
                 }
             }
 
+
+
+
             ManualResetEvent[] doEvent = new ManualResetEvent[] { new ManualResetEvent(false) };
             ThreadPool.QueueUserWorkItem(this.DataExchangeOTSSelf, doEvent[0]);
             ThreadPool.QueueUserWorkItem(this.DataExchangeOPC);
@@ -1965,7 +1971,23 @@ namespace ARAUniSimSIMBridge
             if (doEventsOPCToOTS.Length > 0) WaitHandle.WaitAll(doEventsOPCToOTS);
             if (doEventsOTSToOPC.Length > 0) WaitHandle.WaitAll(doEventsOTSToOPC);
 
-            ThreadPool.QueueUserWorkItem(this.DataExchangeStep);
+
+            /*
+            ManualResetEvent[] doEvent = new ManualResetEvent[] { new ManualResetEvent(false) };
+            this.DataExchangeOTSSelf(doEvent[0]);
+            this.DataExchangeOPC(null);
+            this.DataExchangeOTS(null);*/
+
+
+
+            //ThreadPool.QueueUserWorkItem(this.DataExchangeStep);
+            this.DataExchangeStep(null);
+
+            //ots excution.
+            if (this.isControlMain)
+            {
+                CommonController.Instance.integrator.StepsToExecute += RunInterval;
+            }
         }
     }
 }

@@ -228,10 +228,9 @@ namespace ARAUniSimSIMBridge
                 g.FillRectangle(bab, drawarea);
             }
 
-            if (this.toolStripMenuItemElapsedTime.Checked)
+            if (this.toolStripMenuItemTags.Checked)
             {
                 this.PrintServerList(g);
-                return;
             }
 
             if (this.elapsedTimes.Count <= 2) return;
@@ -436,11 +435,14 @@ namespace ARAUniSimSIMBridge
             }
         }
 
-        private void toolStripMenuItemElapsedTime_Click(object sender, EventArgs e)
+        private void toolStripMenuItemTags_Click(object sender, EventArgs e)
         {
-            toolStripMenuItemElapsedTime.Checked = !toolStripMenuItemElapsedTime.Checked;
+            toolStripMenuItemTags.Checked = !toolStripMenuItemTags.Checked;
             this.RefreshMonitor();
         }
+ 
+
+     
 
     }
 }

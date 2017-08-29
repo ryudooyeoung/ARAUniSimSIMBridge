@@ -530,7 +530,7 @@ namespace ARAUniSimSIMBridge
                 BackDoor bd = (UniSimDesign.BackDoor)this.integrator;
                 while (IsTerminated == false)
                 {
-                    
+
                     //check desired real time factor 
                     RealVariable rv = (RealVariable)bd.get_BackDoorVariable(":ExtraData.107").Variable;
                     if (rv.Value != DTRF)
@@ -653,8 +653,7 @@ namespace ARAUniSimSIMBridge
         {
             bool isprepare = true;
 
-            // this.InitDataTable();
-
+            // this.InitDataTable(); 
             //데이터 교환 준비
             for (int i = 0; i < this.Controllers.Count; i++)
             {
@@ -662,6 +661,7 @@ namespace ARAUniSimSIMBridge
                 if (pc.PrepareStartSimulation() == false)
                     isprepare = false;
             }
+
 
             //문제 없다면 시작.
             if (isprepare && IsTerminated == false)
@@ -688,7 +688,7 @@ namespace ARAUniSimSIMBridge
                 PrivateController pc = this.Controllers[i];
                 pc.StopSimulation();
                 pc.dblRunningSim.SetValue(0);//중지 표시.
-            } 
+            }
         }
 
 
@@ -697,7 +697,7 @@ namespace ARAUniSimSIMBridge
         /// </summary>
         /// <param name="rtf"></param>
         private void SetRealtimeFactor(double rtf)
-        { 
+        {
             for (int i = 0; i < this.Controllers.Count; i++)
             {
                 PrivateController pc = this.Controllers[i];
@@ -1217,7 +1217,6 @@ namespace ARAUniSimSIMBridge
                                                  select query).ToList();
                 List<string> readT = readMapping.Select(x => x.ToType).Distinct().ToList();
 
-
                 List<MappingData> writeMapping = (from query in MappingList.AsEnumerable()
                                                   where query.ToType.Equals(serverName, StringComparison.CurrentCultureIgnoreCase)
                                                   select query).ToList();
@@ -1284,6 +1283,8 @@ namespace ARAUniSimSIMBridge
 
                         //opc 그룹 추가.
                         OPCSubscription opcGroup = ns.AddGroup(string.Format("r_{0}", subServerName), 0);
+
+                        //opc->opc 용일때만 쓰인다.
                         opcGroup.ConnectedServerName = subServerName;
                         opcGroup.ConnectedSubscriptionName = string.Format("w_{0}", serverName);
 
@@ -1295,6 +1296,7 @@ namespace ARAUniSimSIMBridge
                         {
                             opcGroup.ConnectedServerName = string.Empty;
                             opcGroup.ConnectedSubscriptionName = string.Empty;
+                            
                             opcGroup.Type = 0;
 
                             //ots datatable 추가.
@@ -1609,6 +1611,7 @@ namespace ARAUniSimSIMBridge
                     {
                         noError = false;
                         strb.AppendFormat("-{0}\n", readt[i].FromName);
+                        MappingList.Remove(readt[i]);
                         cnt++;
                     }
                 }
@@ -1624,6 +1627,7 @@ namespace ARAUniSimSIMBridge
                     {
                         noError = false;
                         strb.AppendFormat("-{0}\n", writet[i].ToName);
+                        MappingList.Remove(readt[i]);
                         cnt++;
                     }
                 }

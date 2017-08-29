@@ -275,6 +275,9 @@ namespace ARAUniSimSIMBridge
 
             this.txtOLGAMessage = (InternalTextVariable)hyContainer.FindVariable("txtOLGAMessage").Variable;
 
+            
+            //CommonController.Instance.PrintLog(
+            //    Microsoft.VisualBasic.Information.TypeName(hyContainer.FindVariable("enumPagePly").Variable));
 
 
             this.SetStatus(extensionStatus.Disconnected); //초기설정
@@ -290,8 +293,10 @@ namespace ARAUniSimSIMBridge
         /// <summary>
         /// local opc server 목록에서 선택했을 경우 이벤트 처리.
         /// </summary>
-        public void SelectLocalServer()
+        public void SelectLocalServer(string newValue)
         {
+            this.txtLocalServerSelected.Value = newValue;
+
             //CommonController.Instance.PrintLog(txtLocalServerSelected.Value + ", " + this.GetOPCServerName());
             if (this.txtLocalServerSelected.Value.Equals("OLGA OPCServer"))
             {
@@ -834,6 +839,7 @@ namespace ARAUniSimSIMBridge
 
             //서버이름 추리기.
             serverNames.AddRange(serverNames2);
+            //중복제거
             serverNames = serverNames.Distinct().ToList();
             serverNames.Sort();
 
@@ -842,6 +848,7 @@ namespace ARAUniSimSIMBridge
             {
                 CommonController.Instance.ConnectOPCServer(serverNames[i], this);
             }
+
 
             //태그들이 올바른지 체크하기.
             if (CommonController.Instance.CheckMappingOPC(serverNames, this.MappingList) == false ||
@@ -1305,9 +1312,9 @@ namespace ARAUniSimSIMBridge
         {
             if (this.status != extensionStatus.Connected)
             {
-                if (this.ConnectOPCServer() == false)
-                    return false;
+                if (this.ConnectOPCServer() == false) return false;
             }
+
 
             if (this.IsApplyMapping == false)
             {

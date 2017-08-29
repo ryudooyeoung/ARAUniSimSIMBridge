@@ -217,7 +217,6 @@ namespace ARAUniSimSIMBridge
         private Font tooltipFont = new Font("Consolas", 8);
         private void panel1_Paint(object sender, PaintEventArgs e)
         {
-
             Graphics g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
@@ -238,7 +237,6 @@ namespace ARAUniSimSIMBridge
             try
             {
                 List<float> mdata = this.elapsedTimes;
-
 
                 float mxmax = mdata.Count;
                 float mxmin = 0;
@@ -377,7 +375,7 @@ namespace ARAUniSimSIMBridge
                     }
                 }
             }
-            catch  
+            catch
             {
             }
         }
@@ -440,9 +438,9 @@ namespace ARAUniSimSIMBridge
             toolStripMenuItemTags.Checked = !toolStripMenuItemTags.Checked;
             this.RefreshMonitor();
         }
- 
 
-     
+
+
 
     }
 }

@@ -104,7 +104,6 @@ namespace ARAUniSimSIMBridge
             {
                 this.controller.ConnectOPCServer();
             }
-
             else if (Variable.Tag == "msgLoadMapping") //태그 매핑 불러오기
             {
                 this.controller.LoadMappingList(string.Empty);
@@ -117,7 +116,6 @@ namespace ARAUniSimSIMBridge
             {
                 this.controller.ResetMappingList();
             }
-
             else if (Variable.Tag == "msgMonitor")
             {
                 this.controller.ShowMonitor(); //속도,값 확인하기.
@@ -130,7 +128,11 @@ namespace ARAUniSimSIMBridge
             {
                 this.controller.TakeSnapshot(); //olga snapshot 저장.
             }
-            else if (Variable.Tag == "msgLocalServers") { this.controller.SelectLocalServer(); }
+
+            else if (Variable.Tag == "msgLocalServers")
+            {
+                //this.controller.SelectLocalServer(); 
+            }
         }
 
 
@@ -140,11 +142,9 @@ namespace ARAUniSimSIMBridge
         public bool VariableChanging(InternalVariableWrapper variable)
         {
             bool isOK = true;
-            //CommonController.Instance.PrintLog(variable.Tag);
             if (variable.Tag == "txtLocalServerSelected")
-            {
-                //this.controller.SelectLocalServer(); //server
-                 
+            { 
+                this.controller.SelectLocalServer(variable.NewStringValue); //server
             }
             return isOK;
         }
